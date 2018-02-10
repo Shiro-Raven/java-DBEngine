@@ -1,6 +1,7 @@
 package placeholder;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -13,6 +14,7 @@ public class DBApp {
 	// TODO change Exception to DBAppException
 	public void createTable(String strTableName, Hashtable<String, String> htblColNameType) throws Exception {
 		if (!checkMeta()) {
+			createMeta();
 		}
 		if (checkValidName(strTableName) && checkValidKeys(htblColNameType)) {
 			// TODO business logic table creation
@@ -55,6 +57,11 @@ public class DBApp {
 		return false;
 	}
 
+	private static void createMeta() throws IOException {
+		File metaFile = new File("data/metadata.csv");
+		metaFile.createNewFile();
+	}
+
 	private static void addMetaData(String strTableName, Hashtable<String, String> htblColNameType) {
 		// TODO add meta data of table to file
 	}
@@ -84,11 +91,16 @@ public class DBApp {
 
 		// in case meta data file exists print true, otherwise false
 		// System.out.println(checkMeta());
-		
-		//tests for checkValidName
-		
-		//print false in case a directory with the same name exists&& true otherwise
-		//System.out.println(checkValidName("testTable"));
+
+		// tests for checkValidName
+
+		// print false in case a directory with the same name exists&& true otherwise
+		// System.out.println(checkValidName("testTable"));
+
+		// tests for createMeta
+
+		// createMeta();// create a new metadata.csv file or replace in case the file
+		// exists(this case shouldn't happen because of checkMeta condition)
 	}
 
 }

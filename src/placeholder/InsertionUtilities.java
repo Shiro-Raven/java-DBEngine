@@ -209,7 +209,7 @@ public class InsertionUtilities {
 
 		// The whole page contained values less than the ones we want to insert
 		// Therefore, we insert in the first position of the next page
-		return new int[] { currentPage.getPageNumber() - 1, 0 };
+		return new int[] { currentPage.getPageNumber() + 1, 0 };
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

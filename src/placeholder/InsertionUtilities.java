@@ -38,6 +38,7 @@ public class InsertionUtilities {
 				if (currentPage == null) {
 					return new int[] { 1, 0 };
 				}
+				
 				// the last requested page was not found
 				else {
 					// load the rows of the previous page

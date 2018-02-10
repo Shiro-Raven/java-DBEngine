@@ -1,0 +1,32 @@
+package placeholder;
+
+import java.io.Serializable;
+import java.util.Hashtable;
+import placeholder.PageManager;
+
+public class Page implements Serializable {
+
+	private Hashtable<String, Object>[] rows;
+	private int maxRows;
+	private int pageNumber;
+
+	@SuppressWarnings("unchecked")
+	public Page(int pageNumber) {
+		this.pageNumber = pageNumber;
+		maxRows = PageManager.getMaximumRowsCountinPage();
+		rows = (Hashtable<String, Object>[]) new Hashtable<?, ?>[maxRows];
+	}
+
+	public Hashtable<String, Object>[] getRows() {
+		return rows;
+	}
+
+	public int getMaxRows() {
+		return maxRows;
+	}
+
+	public int getPageNumber() {
+		return pageNumber;
+	}
+
+}

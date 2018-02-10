@@ -1,5 +1,6 @@
 package placeholder;
 
+import java.io.File;
 import java.util.Hashtable;
 
 public class DBApp {
@@ -12,8 +13,8 @@ public class DBApp {
 		if(checkMeta())
 		if (checkValidName(strTableName) && checkValidKeys(htblColNameType)) {
 			// TODO business logic table creation
-			addMetaData(strTableName,htblColNameType);
 			addDirectory(strTableName,"data");
+			addMetaData(strTableName,htblColNameType);
 		} else {
 			throw new Exception();
 		}
@@ -35,11 +36,26 @@ public class DBApp {
 	private static void addMetaData(String strTableName,Hashtable<String, String> htblColNameType) {
 		//TODO add meta data of table to file
 	}
-	private static void addDirectory(String directoryName, String filePath) {
+	private static void addDirectory(String directoryName, String path) throws Exception {
 		//TODO add directory for table pages
+		File directory = new File(path+"/"+directoryName);
+		//TODO change Exception to DBAppException
+		if(!directory.mkdir()) {
+			throw new Exception();
+		}
+		
 	}
-	
-	public static void main (String [] args) {
+	//main method for tests
+	public static void main (String [] args) throws Exception {
+		//tests for directory insertion
+		
+			//test for first insertion of directory 
+			//addDirectory("hello","data");
+			//test for duplicate insertion of directory
+			//addDirectory("hello","data");//Exception generated
+			//more reasons might cause the failure of directory insertion
+			//test for add directory to a non-existent parent
+			//addDirectory("hello","foo");//Exception Generated
 		
 	}
 	

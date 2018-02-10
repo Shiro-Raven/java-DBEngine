@@ -1,6 +1,8 @@
 package placeholder;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Hashtable;
 
 public class DBApp {
@@ -23,7 +25,20 @@ public class DBApp {
 
 	private static boolean checkValidName(String strTableName) {
 		// TODO implement Name validation check
-		return true;
+		File dataDirectory = new File("data");
+		File[] fileList = dataDirectory.listFiles();
+		ArrayList<String> tableNames = new ArrayList<String>();
+		for (File file : fileList) {
+			if (file.isDirectory()) {
+				tableNames.add(file.getName());
+			}
+		}
+		if (tableNames.contains(strTableName)) {
+			return false;
+		} else {
+			return true;
+		}
+
 	}
 
 	private static boolean checkValidKeys(Hashtable<String, String> htblColNameType) {
@@ -57,19 +72,23 @@ public class DBApp {
 	public static void main(String[] args) throws Exception {
 		// tests for directory insertion
 
-			// test for first insertion of directory
-			// addDirectory("hello","data");
-			// test for duplicate insertion of directory
-			// addDirectory("hello","data");//Exception generated
-			// more reasons might cause the failure of directory insertion
-			// test for add directory to a non-existent parent
-			// addDirectory("hello","foo");//Exception Generated
-		
+		// test for first insertion of directory
+		// addDirectory("hello","data");
+		// test for duplicate insertion of directory
+		// addDirectory("hello","data");//Exception generated
+		// more reasons might cause the failure of directory insertion
+		// test for add directory to a non-existent parent
+		// addDirectory("hello","foo");//Exception Generated
+
 		// tests for meta data file existence check
+
+		// in case meta data file exists print true, otherwise false
+		// System.out.println(checkMeta());
 		
-			//in case meta data file exists print true, otherwise false
-			//System.out.println(checkMeta());
+		//tests for checkValidName
 		
+		//print false in case a directory with the same name exists&& true otherwise
+		//System.out.println(checkValidName("testTable"));
 	}
 
 }

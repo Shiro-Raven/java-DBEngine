@@ -1,9 +1,9 @@
 package placeholder;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -72,25 +72,62 @@ public class DBApp {
 		return false;
 	}
 
+	// check metadata.csv file exists
 	private static boolean checkMeta() {
 		// TODO implement meta data check
 		File metaFile = new File("data/metadata.csv");
 		if (metaFile.exists()) {
 			return true;
 		}
-		return false;	
+		return false;
 	}
 
+	// create a metadata.csv file
 	private static void createMeta() throws IOException {
 		File metaFile = new File("data/metadata.csv");
 		metaFile.createNewFile();
 	}
 
+	// add meta data of table to metadaata.csv file
 	private static void addMetaData(String strTableName, String strClusteringKeyColumn,
-			Hashtable<String, String> htblColNameType) {
+			Hashtable<String, String> htblColNameType) throws Exception {
 		// TODO add meta data of table to file
+		if (!checkValidClusteringKey(strClusteringKeyColumn, htblColNameType)) {
+			// TODO change exception to DBAppException
+			throw new Exception();
+		}
+		Enumeration<String> htblKeys = htblColNameType.keys();
+		FileWriter metaWriter = new FileWriter("data/metadata.csv", true);
+		while (htblKeys.hasMoreElements()) {
+			String name = htblKeys.nextElement();
+			// TODO add business logic with the implementation of indexing
+			String isIndexed = "false";
+			String isClusteringKey = "";
+			if (name.equals(strClusteringKeyColumn))
+				isClusteringKey = "true";
+			else
+				isClusteringKey = "false";
+			String type = htblColNameType.get(name);
+			metaWriter.write(strTableName + "," + name + "," + type + "," + isClusteringKey + "," + isIndexed + "\n");
+
+		}
+		metaWriter.close();
 	}
 
+	// check whether the clustering key exists in the table declaration
+	private static boolean checkValidClusteringKey(String strClusteringKeyColumn,
+			Hashtable<String, String> htblColNameType) {
+		Enumeration<String> htblKeys = htblColNameType.keys();
+		while (htblKeys.hasMoreElements()) {
+			String key = htblKeys.nextElement();
+			if (key.equals(strClusteringKeyColumn)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// add a new Directory
 	private static void addDirectory(String directoryName, String path) throws Exception {
 		File directory = new File(path + "/" + directoryName);
 		// TODO change Exception to DBAppException
@@ -126,29 +163,42 @@ public class DBApp {
 
 		// createMeta();// create a new metadata.csv file or replace in case the file
 		// exists(this case shouldn't happen because of checkMeta condition)
+
+		// tests for checkVaidKeys
+
+		// failing case, type unsupported
+
+		// Hashtable failedTable = new Hashtable( );
+		// failedTable.put("id", "java.lang.Integer");
+		// failedTable.put("name", "unsupported.Type");
+		// failedTable.put("gpa", "java.lang.Double");
+		// System.out.println(checkValidKeys(failedTable));
+
+		// successful case, types are supported
+
+		// Hashtable successfulTable = new Hashtable();
+		// successfulTable.put("name","java.lang.String");
+		// successfulTable.put("email", "java.lang.String");
+		// successfulTable.put("age", "java.lang.Integer");
+		// successfulTable.put("favoriteDouble", "java.lang.Double");
+		// successfulTable.put("DateOfBirth", "java.util.Date");
+		// successfulTable.put("Married","java.lang.Boolean");
+		// System.out.println(checkValidKeys(successfulTable));
+
+		// tests for addMetaData
 		
-		//tests for checkVaidKeys
+		/* accessing this method publicly causes unwanted behavior
+		* to be accessed only as part of the business logic in create Table method 
+		*/
+		//Hashtable<String, String> metaTable1 = new Hashtable<String, String>();
+		//metaTable1.put("id", "java.lang.Integer");
+		//metaTable1.put("testString", "java.lang.String");
+		//metaTable1.put("testDouble", "java.lang.Double");
+		//metaTable1.put("testBoolean", "java.lang.Boolean");
+		//metaTable1.put("testDate", "java.util.Date");
+		//addMetaData("testTable5", "id", metaTable1);//Generates exception if clustering key doesn't exist in Hashtable
 		
-		//failing case, type unsupported
 		
-		//Hashtable failedTable = new Hashtable( );
-		//failedTable.put("id", "java.lang.Integer");
-		//failedTable.put("name", "unsupported.Type");
-		//failedTable.put("gpa", "java.lang.Double"); 
-		//System.out.println(checkValidKeys(failedTable));
-		
-		//successful case, types are supported
-		
-		//Hashtable successfulTable = new Hashtable();
-		//successfulTable.put("name","java.lang.String");
-		//successfulTable.put("email", "java.lang.String");
-		//successfulTable.put("age", "java.lang.Integer");
-		//successfulTable.put("favoriteDouble", "java.lang.Double");
-		//successfulTable.put("DateOfBirth", "java.util.Date");
-		//successfulTable.put("Married","java.lang.Boolean");
-		//System.out.println(checkValidKeys(successfulTable));
-		
-		//tests for 
 	}
 
 }

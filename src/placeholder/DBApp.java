@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.Hashtable;
 
 public class DBApp {
@@ -12,14 +13,15 @@ public class DBApp {
 	}
 
 	// TODO change Exception to DBAppException
-	public void createTable(String strTableName, Hashtable<String, String> htblColNameType) throws Exception {
+	public void createTable(String strTableName, String strClusteringKeyColumn,
+			Hashtable<String, String> htblColNameType) throws Exception {
 		if (!checkMeta()) {
 			createMeta();
 		}
 		if (checkValidName(strTableName) && checkValidKeys(htblColNameType)) {
 			// TODO business logic table creation
 			addDirectory(strTableName, "data");
-			addMetaData(strTableName, htblColNameType);
+			addMetaData(strTableName, strClusteringKeyColumn, htblColNameType);
 		} else {
 			throw new Exception();
 		}
@@ -27,6 +29,8 @@ public class DBApp {
 
 	private static boolean checkValidName(String strTableName) {
 		// TODO implement Name validation check
+		// A more robust approach would be check the directories and metadata file at
+		// the same time
 		File dataDirectory = new File("data");
 		File[] fileList = dataDirectory.listFiles();
 		ArrayList<String> tableNames = new ArrayList<String>();
@@ -45,7 +49,27 @@ public class DBApp {
 
 	private static boolean checkValidKeys(Hashtable<String, String> htblColNameType) {
 		// TODO implement Key validation check
+		String[] supportedTypes = { "java.lang.Integer", "java.lang.String", "java.lang.Double", "java.lang.Boolean",
+				"java.util.Date" };
+		// get all the keys from the hashtable
+		Enumeration<String> htblKeys = htblColNameType.keys();
+		// iterate over the keys
+		while (htblKeys.hasMoreElements()) {
+			String key = htblKeys.nextElement();
+			// if a type is not supported return false
+			if (!arrayContains(supportedTypes, htblColNameType.get(key)))
+				return false;
+		}
+		// if all types are supported, passed validation
 		return true;
+	}
+
+	private static boolean arrayContains(String[] array, String key) {
+		for (String element : array) {
+			if (key.equals(element))
+				return true;
+		}
+		return false;
 	}
 
 	private static boolean checkMeta() {
@@ -54,7 +78,7 @@ public class DBApp {
 		if (metaFile.exists()) {
 			return true;
 		}
-		return false;
+		return false;	
 	}
 
 	private static void createMeta() throws IOException {
@@ -62,7 +86,8 @@ public class DBApp {
 		metaFile.createNewFile();
 	}
 
-	private static void addMetaData(String strTableName, Hashtable<String, String> htblColNameType) {
+	private static void addMetaData(String strTableName, String strClusteringKeyColumn,
+			Hashtable<String, String> htblColNameType) {
 		// TODO add meta data of table to file
 	}
 
@@ -101,6 +126,29 @@ public class DBApp {
 
 		// createMeta();// create a new metadata.csv file or replace in case the file
 		// exists(this case shouldn't happen because of checkMeta condition)
+		
+		//tests for checkVaidKeys
+		
+		//failing case, type unsupported
+		
+		//Hashtable failedTable = new Hashtable( );
+		//failedTable.put("id", "java.lang.Integer");
+		//failedTable.put("name", "unsupported.Type");
+		//failedTable.put("gpa", "java.lang.Double"); 
+		//System.out.println(checkValidKeys(failedTable));
+		
+		//successful case, types are supported
+		
+		//Hashtable successfulTable = new Hashtable();
+		//successfulTable.put("name","java.lang.String");
+		//successfulTable.put("email", "java.lang.String");
+		//successfulTable.put("age", "java.lang.Integer");
+		//successfulTable.put("favoriteDouble", "java.lang.Double");
+		//successfulTable.put("DateOfBirth", "java.util.Date");
+		//successfulTable.put("Married","java.lang.Boolean");
+		//System.out.println(checkValidKeys(successfulTable));
+		
+		//tests for 
 	}
 
 }

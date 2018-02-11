@@ -4,6 +4,14 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import placeholder.PageManager;
 
+/**
+ * 
+ * @author Omar Assumptions: When Deleting, we don't set the values in the
+ *         hashtable to null. We should instead mark them somehow with an extra
+ *         variable, indicating that they were deleted. Otherwise, the search
+ *         will not produce right results.
+ *
+ */
 public class InsertionUtilities {
 	// change exception to DBAppException
 	@SuppressWarnings("rawtypes")
@@ -38,7 +46,7 @@ public class InsertionUtilities {
 				if (currentPage == null) {
 					return new int[] { 1, 0 };
 				}
-				
+
 				// the last requested page was not found
 				else {
 					// load the rows of the previous page
@@ -151,7 +159,7 @@ public class InsertionUtilities {
 		} catch (Exception e) {
 			// unexpected error
 			// could not load the previous page
-			e.printStackTrace();
+			// e.printStackTrace();
 		}
 
 		// re-initialize the incremental key for comparison

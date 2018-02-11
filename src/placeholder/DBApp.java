@@ -28,7 +28,6 @@ public class DBApp {
 	}
 
 	private static boolean checkValidName(String strTableName) {
-		// TODO implement Name validation check
 		// A more robust approach would be check the directories and metadata file at
 		// the same time
 		File dataDirectory = new File("data");
@@ -48,7 +47,6 @@ public class DBApp {
 	}
 
 	private static boolean checkValidKeys(Hashtable<String, String> htblColNameType) {
-		// TODO implement Key validation check
 		String[] supportedTypes = { "java.lang.Integer", "java.lang.String", "java.lang.Double", "java.lang.Boolean",
 				"java.util.Date" };
 		// get all the keys from the hashtable
@@ -74,7 +72,6 @@ public class DBApp {
 
 	// check metadata.csv file exists
 	private static boolean checkMeta() {
-		// TODO implement meta data check
 		File metaFile = new File("data/metadata.csv");
 		if (metaFile.exists()) {
 			return true;
@@ -91,7 +88,6 @@ public class DBApp {
 	// add meta data of table to metadaata.csv file
 	private static void addMetaData(String strTableName, String strClusteringKeyColumn,
 			Hashtable<String, String> htblColNameType) throws Exception {
-		// TODO add meta data of table to file
 		if (!checkValidClusteringKey(strClusteringKeyColumn, htblColNameType)) {
 			// TODO change exception to DBAppException
 			throw new Exception();
@@ -138,7 +134,7 @@ public class DBApp {
 	}
 
 	// main method for tests
-	public static void main(String[] args) throws Exception {
+	//public static void main(String[] args) throws Exception {
 		// tests for directory insertion
 
 		// test for first insertion of directory
@@ -199,6 +195,6 @@ public class DBApp {
 		//addMetaData("testTable5", "id", metaTable1);//Generates exception if clustering key doesn't exist in Hashtable
 		
 		
-	}
+	//}
 
 }

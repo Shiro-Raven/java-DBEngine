@@ -2,6 +2,8 @@ package placeholder;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Set;
+
 import placeholder.PageManager;
 
 /**
@@ -257,5 +259,14 @@ public class InsertionUtilities {
 		}
 
 		return tupleKeyValues;
+	}
+
+	public static boolean isValidTuple(Hashtable<String, String> ColNameType, Hashtable<String, Object> Tuple){
+		Set<String> keys = Tuple.keySet();
+		for(String key : keys){
+			if(!ColNameType.get(key).equals(Tuple.get(key).getClass().toString().substring(6)))
+				return false;
+		}
+		return true;
 	}
 }

@@ -271,7 +271,7 @@ public class InsertionUtilities {
 		return true;
 	}
 
-	public static boolean insertIntoTuple(String tableName, int[] positionToInsertAt,
+	public static boolean insertTuple(String tableName, int[] positionToInsertAt,
 			Hashtable<String, Object> htblColNameValue) throws IOException {
 
 		Page page = InsertionUtilities.loadPage(tableName, positionToInsertAt[0]);

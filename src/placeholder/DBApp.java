@@ -134,67 +134,68 @@ public class DBApp {
 	}
 
 	// main method for tests
-	//public static void main(String[] args) throws Exception {
-		// tests for directory insertion
+	// public static void main(String[] args) throws Exception {
+	// tests for directory insertion
 
-		// test for first insertion of directory
-		// addDirectory("hello","data");
-		// test for duplicate insertion of directory
-		// addDirectory("hello","data");//Exception generated
-		// more reasons might cause the failure of directory insertion
-		// test for add directory to a non-existent parent
-		// addDirectory("hello","foo");//Exception Generated
+	// test for first insertion of directory
+	// addDirectory("hello","data");
+	// test for duplicate insertion of directory
+	// addDirectory("hello","data");//Exception generated
+	// more reasons might cause the failure of directory insertion
+	// test for add directory to a non-existent parent
+	// addDirectory("hello","foo");//Exception Generated
 
-		// tests for meta data file existence check
+	// tests for meta data file existence check
 
-		// in case meta data file exists print true, otherwise false
-		// System.out.println(checkMeta());
+	// in case meta data file exists print true, otherwise false
+	// System.out.println(checkMeta());
 
-		// tests for checkValidName
+	// tests for checkValidName
 
-		// print false in case a directory with the same name exists&& true otherwise
-		// System.out.println(checkValidName("testTable"));
+	// print false in case a directory with the same name exists&& true otherwise
+	// System.out.println(checkValidName("testTable"));
 
-		// tests for createMeta
+	// tests for createMeta
 
-		// createMeta();// create a new metadata.csv file or replace in case the file
-		// exists(this case shouldn't happen because of checkMeta condition)
+	// createMeta();// create a new metadata.csv file or replace in case the file
+	// exists(this case shouldn't happen because of checkMeta condition)
 
-		// tests for checkVaidKeys
+	// tests for checkVaidKeys
 
-		// failing case, type unsupported
+	// failing case, type unsupported
 
-		// Hashtable failedTable = new Hashtable( );
-		// failedTable.put("id", "java.lang.Integer");
-		// failedTable.put("name", "unsupported.Type");
-		// failedTable.put("gpa", "java.lang.Double");
-		// System.out.println(checkValidKeys(failedTable));
+	// Hashtable failedTable = new Hashtable( );
+	// failedTable.put("id", "java.lang.Integer");
+	// failedTable.put("name", "unsupported.Type");
+	// failedTable.put("gpa", "java.lang.Double");
+	// System.out.println(checkValidKeys(failedTable));
 
-		// successful case, types are supported
+	// successful case, types are supported
 
-		// Hashtable successfulTable = new Hashtable();
-		// successfulTable.put("name","java.lang.String");
-		// successfulTable.put("email", "java.lang.String");
-		// successfulTable.put("age", "java.lang.Integer");
-		// successfulTable.put("favoriteDouble", "java.lang.Double");
-		// successfulTable.put("DateOfBirth", "java.util.Date");
-		// successfulTable.put("Married","java.lang.Boolean");
-		// System.out.println(checkValidKeys(successfulTable));
+	// Hashtable successfulTable = new Hashtable();
+	// successfulTable.put("name","java.lang.String");
+	// successfulTable.put("email", "java.lang.String");
+	// successfulTable.put("age", "java.lang.Integer");
+	// successfulTable.put("favoriteDouble", "java.lang.Double");
+	// successfulTable.put("DateOfBirth", "java.util.Date");
+	// successfulTable.put("Married","java.lang.Boolean");
+	// System.out.println(checkValidKeys(successfulTable));
 
-		// tests for addMetaData
-		
-		/* accessing this method publicly causes unwanted behavior
-		* to be accessed only as part of the business logic in create Table method 
-		*/
-		//Hashtable<String, String> metaTable1 = new Hashtable<String, String>();
-		//metaTable1.put("id", "java.lang.Integer");
-		//metaTable1.put("testString", "java.lang.String");
-		//metaTable1.put("testDouble", "java.lang.Double");
-		//metaTable1.put("testBoolean", "java.lang.Boolean");
-		//metaTable1.put("testDate", "java.util.Date");
-		//addMetaData("testTable5", "id", metaTable1);//Generates exception if clustering key doesn't exist in Hashtable
-		
-		
-	//}
+	// tests for addMetaData
+
+	/*
+	 * accessing this method publicly causes unwanted behavior to be accessed only
+	 * as part of the business logic in create Table method
+	 */
+	// Hashtable<String, String> metaTable1 = new Hashtable<String, String>();
+	// metaTable1.put("id", "java.lang.Integer");
+	// metaTable1.put("testString", "java.lang.String");
+	// metaTable1.put("testDouble", "java.lang.Double");
+	// metaTable1.put("testBoolean", "java.lang.Boolean");
+	// metaTable1.put("testDate", "java.util.Date");
+	// addMetaData("testTable5", "id", metaTable1);//Generates exception if
+	// clustering key doesn't exist in Hashtable
+
+	// }
 
 }

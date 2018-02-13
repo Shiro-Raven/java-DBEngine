@@ -1,10 +1,10 @@
 package placeholder;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.Set;
-
-import placeholder.PageManager;
 
 /**
  * 
@@ -16,6 +16,7 @@ import placeholder.PageManager;
  */
 public class InsertionUtilities {
 	// change exception to DBAppException
+
 	@SuppressWarnings("rawtypes")
 	public static int[] searchForInsertionPosition(String strTableName, ArrayList<String> primaryKey,
 			Hashtable<String, Object> htblColNameValue) throws Exception {
@@ -261,12 +262,63 @@ public class InsertionUtilities {
 		return tupleKeyValues;
 	}
 
-	public static boolean isValidTuple(Hashtable<String, String> ColNameType, Hashtable<String, Object> Tuple){
+	public static boolean isValidTuple(Hashtable<String, String> ColNameType, Hashtable<String, Object> Tuple) {
 		Set<String> keys = Tuple.keySet();
-		for(String key : keys){
-			if(!ColNameType.get(key).equals(Tuple.get(key).getClass().toString().substring(6)))
+		for (String key : keys) {
+			if (!ColNameType.get(key).equals(Tuple.get(key).getClass().toString().substring(6)))
 				return false;
 		}
 		return true;
 	}
+
+	public static boolean insertIntoTuple(String tableName, int[] positionToInsertAt,
+			Hashtable<String, Object> htblColNameValue) throws IOException {
+
+		Page page = InsertionUtilities.loadPage(tableName, positionToInsertAt[0]);
+		int maxRows = PageManager.getMaximumRowsCountinPage();
+		htblColNameValue.put("TouchDate", new Date());
+		Hashtable<String, Object> tempHtblColNameValue;
+
+		for (int i = positionToInsertAt[1]; i < maxRows; i++) {
+
+			tempHtblColNameValue = page.getRows()[i];
+			page.getRows()[i] = htblColNameValue;
+			htblColNameValue = tempHtblColNameValue;
+
+			if (htblColNameValue == null)
+				break;
+
+			if (i == maxRows - 1) {
+
+				i = -1; // Reset i
+				PageManager.serializePage(page, "data/" + tableName + "/" + positionToInsertAt[0] + ".ser");
+				page = InsertionUtilities.loadPage(tableName, ++positionToInsertAt[0]);
+
+			}
+
+		}
+
+		PageManager.serializePage(page, "data/" + tableName + "/" + positionToInsertAt[0] + ".ser");
+		return true;
+
+	}
+
+	public static Page loadPage(String tableName, int pageNumber) throws IOException {
+
+		Page page;
+
+		try {
+
+			page = PageManager.deserializePage("data/" + tableName + "/page_" + pageNumber + ".ser");
+
+		} catch (Exception e) {
+
+			page = new Page(pageNumber);
+
+		}
+
+		return page;
+
+	}
+
 }

@@ -132,6 +132,11 @@ public class DBApp {
 		}
 
 	}
+	
+	// Skeleton of InsertIntoTaple
+	public void insertIntoTaple(String strTableName, Hashtable<String, Object>htblColNameValue) {
+		
+	}
 
 	// main method for tests
 	// public static void main(String[] args) throws Exception {

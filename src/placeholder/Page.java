@@ -3,7 +3,6 @@ package placeholder;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Hashtable;
-import placeholder.PageManager;
 
 public class Page implements Serializable {
 

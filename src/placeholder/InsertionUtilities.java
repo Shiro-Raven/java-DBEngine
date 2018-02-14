@@ -15,7 +15,7 @@ import java.util.Set;
  *
  */
 public class InsertionUtilities {
-	
+
 	// change exception to DBAppException
 	@SuppressWarnings("rawtypes")
 	public static int[] searchForInsertionPosition(String strTableName, ArrayList<String> primaryKey,

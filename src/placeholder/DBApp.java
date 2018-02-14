@@ -15,7 +15,7 @@ public class DBApp {
 	// TODO change Exception to DBAppException
 	public void createTable(String strTableName, String strClusteringKeyColumn,
 			Hashtable<String, String> htblColNameType) throws Exception {
-		if(strTableName == null || strClusteringKeyColumn == null || htblColNameType == null) {
+		if (strTableName == null || strClusteringKeyColumn == null || htblColNameType == null) {
 			throw new Exception();
 		}
 		if (!checkMeta()) {
@@ -135,10 +135,10 @@ public class DBApp {
 		}
 
 	}
-	
+
 	// Skeleton of InsertIntoTaple
-	public void insertIntoTaple(String strTableName, Hashtable<String, Object>htblColNameValue) {
-		
+	public void insertIntoTaple(String strTableName, Hashtable<String, Object> htblColNameValue) {
+
 	}
 
 	// main method for tests

@@ -15,6 +15,9 @@ public class DBApp {
 	// TODO change Exception to DBAppException
 	public void createTable(String strTableName, String strClusteringKeyColumn,
 			Hashtable<String, String> htblColNameType) throws Exception {
+		if(strTableName == null || strClusteringKeyColumn == null || htblColNameType == null) {
+			throw new Exception();
+		}
 		if (!checkMeta()) {
 			createMeta();
 		}

@@ -5,3 +5,4 @@ all: src/placeholder/DBApp.java src/placeholder/InsertionUtilities.java src/plac
 
 clean:
 	rm classes/placeholder/*.class
+	rm -r data/*

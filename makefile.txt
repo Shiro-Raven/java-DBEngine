@@ -1,0 +1,29 @@
+# define a makefile variable for the java compiler
+#
+JCC = javac
+
+# define a makefile variable for compilation flags
+# the -g flag compiles with debugging information
+#
+JFLAGS = -g
+
+# typing 'make' will invoke the first target entry in the makefile
+all: DBApp.class DBAppTest.class InsertionUtilities.class Page.class PageManager.class
+
+DBApp.class: \src\placeholder\DBApp.java
+	$(JCC) $(JFLAGS) DBApp.java
+
+DBAppTest.class: DBAppTest.java
+	$(JCC) $(JFLAGS) DBAppTest.java
+
+InsertionUtilities.class: InsertionUtilities.java
+	$(JCC) $(JFLAGS) InsertionUtilities.java
+
+Page.class: Page.java
+	$(JCC) $(JFLAGS) Page.java
+
+PageManager.class: PageManager.java
+	$(JCC) $(JFLAGS) PageManager.java
+
+clean: 
+	-rm -f build

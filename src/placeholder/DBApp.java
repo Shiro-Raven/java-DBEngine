@@ -13,17 +13,25 @@ public class DBApp {
 
 	// TODO change Exception to DBAppException
 	public void createTable(String strTableName, String strClusteringKeyColumn,
-			Hashtable<String, String> htblColNameType) throws Exception {
+			Hashtable<String, String> htblColNameType) throws DBAppException {
 		if (strTableName == null || strClusteringKeyColumn == null || htblColNameType == null) {
 			throw new DBAppException();
 		}
 		if (!CreationUtilities.checkMeta()) {
-			CreationUtilities.createMeta();
+			try {
+				CreationUtilities.createMeta();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		if (CreationUtilities.checkValidName(strTableName) && CreationUtilities.checkValidKeys(htblColNameType)) {
 			// TODO business logic table creation
 			CreationUtilities.addDirectory(strTableName, "data");
-			CreationUtilities.addMetaData(strTableName, strClusteringKeyColumn, htblColNameType);
+			try {
+				CreationUtilities.addMetaData(strTableName, strClusteringKeyColumn, htblColNameType);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		} else {
 			throw new DBAppException();
 		}

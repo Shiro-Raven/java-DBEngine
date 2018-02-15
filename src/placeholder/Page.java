@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Hashtable;
 
+@SuppressWarnings("serial")
 public class Page implements Serializable {
 
 	private Hashtable<String, Object>[] rows;

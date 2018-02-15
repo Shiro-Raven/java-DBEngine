@@ -1,6 +1,8 @@
 package placeholder;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +33,8 @@ public class DBApp {
 	}
 
 	private static boolean checkValidName(String strTableName) {
-		// A more robust approach would be check the directories and metadata file at
+		// A more robust approach would be check the directories and metadata
+		// file at
 		// the same time
 		File dataDirectory = new File("data");
 		File[] fileList = dataDirectory.listFiles();
@@ -136,9 +139,61 @@ public class DBApp {
 
 	}
 
-	// Skeleton of InsertIntoTable
-	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) {
+	// Skeleton of InsertIntoTaple
+	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
+		String line = null;
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader("data/metadata.csv"));
+			line = br.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
+		ArrayList<String[]> data = new ArrayList<>();
+		ArrayList<String> primary_key = new ArrayList<>();
+		Hashtable<String, String> ColNameType = new Hashtable<>();
+
+		while (line != null) {
+			String[] content = line.split(",");
+
+			if (content[0].equals(strTableName)) {
+				data.add(content);
+				ColNameType.put(content[1], content[2]);
+				if (content[3].equals("true"))
+					primary_key.add(content[1]);
+			}
+			try {
+				line = br.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		try {
+			br.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (data.isEmpty())
+			throw new DBAppException("404 Table Not Found !");
+
+		for (String key : primary_key)
+			if (htblColNameValue.get(key).equals(null))
+				throw new DBAppException("Primary Key Can NOT be null");
+
+		if (!InsertionUtilities.isValidTuple(ColNameType, htblColNameValue))
+			throw new DBAppException(
+					"The tuple you're trying to insert into table " + strTableName + " is not a valid tuple!");
+
+		int[] positionToInsertAt = InsertionUtilities.searchForInsertionPosition(strTableName, primary_key,
+				htblColNameValue);
+		try {
+			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	// main method for tests
@@ -160,12 +215,14 @@ public class DBApp {
 
 	// tests for checkValidName
 
-	// print false in case a directory with the same name exists&& true otherwise
+	// print false in case a directory with the same name exists&& true
+	// otherwise
 	// System.out.println(checkValidName("testTable"));
 
 	// tests for createMeta
 
-	// createMeta();// create a new metadata.csv file or replace in case the file
+	// createMeta();// create a new metadata.csv file or replace in case the
+	// file
 	// exists(this case shouldn't happen because of checkMeta condition)
 
 	// tests for checkVaidKeys
@@ -192,8 +249,8 @@ public class DBApp {
 	// tests for addMetaData
 
 	/*
-	 * accessing this method publicly causes unwanted behavior to be accessed only
-	 * as part of the business logic in create Table method
+	 * accessing this method publicly causes unwanted behavior to be accessed
+	 * only as part of the business logic in create Table method
 	 */
 	// Hashtable<String, String> metaTable1 = new Hashtable<String, String>();
 	// metaTable1.put("id", "java.lang.Integer");

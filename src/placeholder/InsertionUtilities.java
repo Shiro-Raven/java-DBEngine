@@ -19,7 +19,7 @@ public class InsertionUtilities {
 	// change exception to DBAppException
 	@SuppressWarnings("rawtypes")
 	public static int[] searchForInsertionPosition(String strTableName, ArrayList<String> primaryKey,
-			Hashtable<String, Object> htblColNameValue) throws Exception {
+			Hashtable<String, Object> htblColNameValue) throws DBAppException {
 
 		int pageNumber = 1;
 		int rowNumber = 0;
@@ -75,7 +75,7 @@ public class InsertionUtilities {
 
 						while (comparisonResult == 0) {
 							if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-								throw new Exception("The primary key constraint was violated.");
+								throw new DBAppException("The primary key constraint was violated.");
 							} else {
 								// add one more column to the primary key
 								// columns examined
@@ -130,7 +130,7 @@ public class InsertionUtilities {
 
 			while (comparisonResult == 0) {
 				if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-					throw new Exception("The primary key constraint was violated.");
+					throw new DBAppException("The primary key constraint was violated.");
 				} else {
 					// add one more column to the primary key
 					// columns examined
@@ -195,7 +195,7 @@ public class InsertionUtilities {
 			while (comparisonResult == 0) {
 				// is the key expandable?
 				if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-					throw new Exception("The primary key constraint was violated.");
+					throw new DBAppException("The primary key constraint was violated.");
 				} else {
 					// add one more column to the primary key
 					// columns examined

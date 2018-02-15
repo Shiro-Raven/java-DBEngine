@@ -136,8 +136,8 @@ public class DBApp {
 
 	}
 
-	// Skeleton of InsertIntoTaple
-	public void insertIntoTaple(String strTableName, Hashtable<String, Object> htblColNameValue) {
+	// Skeleton of InsertIntoTable
+	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) {
 
 	}
 

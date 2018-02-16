@@ -291,14 +291,14 @@ public class InsertionUtilities {
 			if (i == maxRows - 1) {
 
 				i = -1; // Reset i
-				PageManager.serializePage(page, "data/" + tableName + "/" + positionToInsertAt[0] + ".ser");
+				PageManager.serializePage(page, "data/" + tableName + "/page_" + positionToInsertAt[0] + ".ser");
 				page = InsertionUtilities.loadPage(tableName, ++positionToInsertAt[0]);
 
 			}
 
 		}
 
-		PageManager.serializePage(page, "data/" + tableName + "/" + positionToInsertAt[0] + ".ser");
+		PageManager.serializePage(page, "data/" + tableName + "/page_" + positionToInsertAt[0] + ".ser");
 		return true;
 
 	}

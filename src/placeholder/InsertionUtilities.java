@@ -265,7 +265,7 @@ public class InsertionUtilities {
 	public static boolean isValidTuple(Hashtable<String, String> ColNameType, Hashtable<String, Object> Tuple) {
 		Set<String> keys = Tuple.keySet();
 		for (String key : keys) {
-			if (!ColNameType.get(key).equals(Tuple.get(key).getClass().toString().substring(6)))
+			if (!(ColNameType.get(key) == null) && !ColNameType.get(key).equals(Tuple.get(key).getClass().toString().substring(6)))
 				return false;
 		}
 		return true;

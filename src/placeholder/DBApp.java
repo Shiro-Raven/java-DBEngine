@@ -58,7 +58,7 @@ public class DBApp {
 			if (content[0].equals(strTableName)) {
 				data.add(content);
 				ColNameType.put(content[1], content[2]);
-				if (content[3].equals("true"))
+				if ((content[3].toLowerCase()).equals("true"))
 					primary_key.add(content[1]);
 			}
 			try {

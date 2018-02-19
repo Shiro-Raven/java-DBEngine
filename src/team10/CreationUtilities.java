@@ -1,4 +1,4 @@
-package placeholder;
+package team10;
 
 import java.io.File;
 import java.io.FileWriter;

@@ -1,4 +1,4 @@
-package placeholder;
+package team10;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;

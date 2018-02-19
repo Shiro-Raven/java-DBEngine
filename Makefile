@@ -1,7 +1,7 @@
-all: src/placeholder/DBApp.java src/placeholder/InsertionUtilities.java src/placeholder/Page.java src/placeholder/PageManager.java src/placeholder/Tests.java src/placeholder/DBAppException.java
-	javac src/placeholder/DBApp.java src/placeholder/Page.java src/placeholder/PageManager.java src/placeholder/InsertionUtilities.java src/placeholder/Tests.java src/placeholder/DBAppException.java
-	mv src/placeholder/*.class classes/placeholder/
-	java -cp classes/ placeholder.Tests
+all: src/team10/DBApp.java src/team10/InsertionUtilities.java src/team10/Page.java src/team10/PageManager.java src/team10/Tests.java src/team10/DBAppException.java
+	javac src/team10/DBApp.java src/team10/Page.java src/team10/PageManager.java src/team10/InsertionUtilities.java src/team10/Tests.java src/team10/DBAppException.java
+	mv src/team10/*.class classes/team10/
+	java -cp classes/ team10.Tests
 
 clean:
-	rm classes/placeholder/*.class
+	rm classes/team10/*.class

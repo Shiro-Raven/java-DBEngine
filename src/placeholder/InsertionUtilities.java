@@ -75,7 +75,13 @@ public class InsertionUtilities {
 
 						while (comparisonResult == 0) {
 							if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-								throw new DBAppException("The primary key constraint was violated.");
+								// check if the matching tuple was deleted
+								if (((boolean) currentRow.get("isDeleted"))) {
+									rowNumber = i;
+									return new int[] { currentPage.getPageNumber(), rowNumber };
+								} else {
+									throw new DBAppException("The primary key constraint was violated.");
+								}
 							} else {
 								// add one more column to the primary key
 								// columns examined
@@ -130,7 +136,13 @@ public class InsertionUtilities {
 
 			while (comparisonResult == 0) {
 				if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-					throw new DBAppException("The primary key constraint was violated.");
+					// check if the matching tuple was deleted
+					if (((boolean) firstRow.get("isDeleted"))) {
+						rowNumber = 0;
+						return new int[] { currentPage.getPageNumber(), rowNumber };
+					} else {
+						throw new DBAppException("The primary key constraint was violated.");
+					}
 				} else {
 					// add one more column to the primary key
 					// columns examined
@@ -195,7 +207,13 @@ public class InsertionUtilities {
 			while (comparisonResult == 0) {
 				// is the key expandable?
 				if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-					throw new DBAppException("The primary key constraint was violated.");
+					// check if the matching tuple was deleted
+					if (((boolean) currentRow.get("isDeleted"))) {
+						rowNumber = i;
+						return new int[] { currentPage.getPageNumber(), rowNumber };
+					} else {
+						throw new DBAppException("The primary key constraint was violated.");
+					}
 				} else {
 					// add one more column to the primary key
 					// columns examined
@@ -265,7 +283,8 @@ public class InsertionUtilities {
 	public static boolean isValidTuple(Hashtable<String, String> ColNameType, Hashtable<String, Object> Tuple) {
 		Set<String> keys = Tuple.keySet();
 		for (String key : keys) {
-			if (!(ColNameType.get(key) == null) && !ColNameType.get(key).equals(Tuple.get(key).getClass().toString().substring(6)))
+			if (!(ColNameType.get(key) == null)
+					&& !ColNameType.get(key).equals(Tuple.get(key).getClass().toString().substring(6)))
 				return false;
 		}
 		return true;

@@ -277,6 +277,7 @@ public class InsertionUtilities {
 		Page page = InsertionUtilities.loadPage(tableName, positionToInsertAt[0]);
 		int maxRows = PageManager.getMaximumRowsCountinPage();
 		htblColNameValue.put("TouchDate", new Date());
+		htblColNameValue.put("isDeleted", false);
 		Hashtable<String, Object> tempHtblColNameValue;
 
 		for (int i = positionToInsertAt[1]; i < maxRows; i++) {
@@ -285,7 +286,7 @@ public class InsertionUtilities {
 			page.getRows()[i] = htblColNameValue;
 			htblColNameValue = tempHtblColNameValue;
 
-			if (htblColNameValue == null)
+			if (htblColNameValue == null || ((boolean) htblColNameValue.get("isDeleted")) == true)
 				break;
 
 			if (i == maxRows - 1) {

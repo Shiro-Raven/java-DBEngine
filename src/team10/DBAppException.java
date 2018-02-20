@@ -1,4 +1,4 @@
-package placeholder;
+package team10;
 
 public class DBAppException extends Exception {
 

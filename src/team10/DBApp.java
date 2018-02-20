@@ -1,4 +1,4 @@
-package placeholder;
+package team10;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -11,7 +11,6 @@ public class DBApp {
 
 	}
 
-	// TODO change Exception to DBAppException
 	public void createTable(String strTableName, String strClusteringKeyColumn,
 			Hashtable<String, String> htblColNameType) throws DBAppException {
 		if (strTableName == null || strClusteringKeyColumn == null || htblColNameType == null) {
@@ -37,7 +36,6 @@ public class DBApp {
 		}
 	}
 
-	// Skeleton of InsertIntoTaple
 	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 		String line = null;
 		BufferedReader br = null;
@@ -94,4 +92,8 @@ public class DBApp {
 		}
 	}
 
+	public void updateTable(String strTableName, String strKey, Hashtable<String, Object> htblColNameValue)
+			throws DBAppException {
+
+	}
 }

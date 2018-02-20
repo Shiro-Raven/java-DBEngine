@@ -24,13 +24,12 @@ public class DBApp {
 			}
 		}
 		if (CreationUtilities.checkValidName(strTableName) && CreationUtilities.checkValidKeys(htblColNameType)) {
-			// TODO business logic table creation
-			CreationUtilities.addDirectory(strTableName, "data");
 			try {
 				CreationUtilities.addMetaData(strTableName, strClusteringKeyColumn, htblColNameType);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			CreationUtilities.addDirectory(strTableName, "data");
 		} else {
 			throw new DBAppException();
 		}

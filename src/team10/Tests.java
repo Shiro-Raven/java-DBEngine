@@ -67,7 +67,7 @@ public class Tests {
 		htblColNameValue.put("id", 105);
 		htblColNameValue.put("first_name", "Yasmeen");
 		htblColNameValue.put("last_name", "Khalafy");
-		htblColNameValue.put("gpa", 0.92);
+		htblColNameValue.put("gpa", 0.95);
 		htblColNameValue.put("birth_date", new Date(1997, 1, 1));
 		htblColNameValue.put("gender", true);
 		new DBApp().insertIntoTable("Student", htblColNameValue);

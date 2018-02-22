@@ -9,9 +9,7 @@ import java.util.Hashtable;
 
 public class CreationUtilities {
 	static boolean checkValidName(String strTableName) {
-		// A more robust approach would be check the directories and metadata
-		// file at
-		// the same time
+		// A more robust approach would be check the directories and metadata.csv the same time
 		File dataDirectory = new File("data");
 		File[] fileList = dataDirectory.listFiles();
 		ArrayList<String> tableNames = new ArrayList<String>();

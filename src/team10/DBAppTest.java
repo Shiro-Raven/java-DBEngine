@@ -5,11 +5,19 @@ import java.util.Hashtable;
 
 public class DBAppTest {
 	public static void main(String[] args) throws Exception {
+		// set the MaximumRowsCountinPage = 5 in DBApp.properties 
 		// run the Tests class first to create the table
 		
-		Page p = PageManager.deserializePage("data/Student/page_1.ser");
-		System.out.println("Table before deletion:");
-		PageManager.printPageContents(p);
+		Page p1 = PageManager.deserializePage("data/Student/page_1.ser");
+		Page p2 = PageManager.deserializePage("data/Student/page_2.ser");
+		Page p3 = PageManager.deserializePage("data/Student/page_3.ser");
+		System.out.println("Table before deletion:\n");
+		System.out.println("Page 1");
+		PageManager.printPageContents(p1);
+		System.out.println("Page 2");
+		PageManager.printPageContents(p2);
+		System.out.println("Page 3");
+		PageManager.printPageContents(p3);
 		
 		Hashtable<String, Object> tuple = new Hashtable<>();
 		
@@ -29,14 +37,24 @@ public class DBAppTest {
 		// uncomment following line to test deleting a row based on a non key column
 		// tuple.put("gender", false);
 		
+		// uncomment following line to test deleting a row based on a non key column
+		// tuple.put("first_name", "Yasmeen");
+		
 		// uncomment following line to test deleting a row based on a set of non key columns
 		/*tuple.put("gender", true);
 		tuple.put("gpa", 0.92);*/
 		
 		new DBApp().deleteFromTable("Student", tuple);
 		
-		p = PageManager.deserializePage("data/Student/page_1.ser");
-		System.out.println("Table after deletion:");
-		PageManager.printPageContents(p);
+		System.out.println("\nTable after deletion:\n");
+		p1 = PageManager.deserializePage("data/Student/page_1.ser");
+		p2 = PageManager.deserializePage("data/Student/page_2.ser");
+		p3 = PageManager.deserializePage("data/Student/page_3.ser");
+		System.out.println("Page 1");
+		PageManager.printPageContents(p1);
+		System.out.println("Page 2");
+		PageManager.printPageContents(p2);
+		System.out.println("Page 3");
+		PageManager.printPageContents(p3);
 	}
 }

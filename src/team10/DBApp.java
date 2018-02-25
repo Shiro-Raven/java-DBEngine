@@ -35,6 +35,7 @@ public class DBApp {
 		} else {
 			throw new DBAppException();
 		}
+		System.out.println("Table Created!");
 	}
 
 	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
@@ -91,6 +92,7 @@ public class DBApp {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		System.out.println("Tuple Inserted!");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -110,8 +112,8 @@ public class DBApp {
 
 		// Get Columns and Primary key of needed table (with its type)
 		ArrayList<Object> neededData = UpdateUtilities.getColumnsAndKey(strTableName);
-		
-		Hashtable<String,String> tblNameType = (Hashtable<String, String>) neededData.get(0);
+
+		Hashtable<String, String> tblNameType = (Hashtable<String, String>) neededData.get(0);
 		String PKeyName = (String) neededData.get(1);
 
 		// Check if valid tuple
@@ -149,19 +151,20 @@ public class DBApp {
 				for (int i = 0; i < currentPage.getRows().length; i++) {
 					Hashtable<String, Object> curRow = currentPage.getRows()[i];
 					// if a matching row is found
-					if(curRow.get(strKey).equals(keyValue) && !((boolean)curRow.get("isDeleted"))){
+					if (curRow.get(PKeyName).equals(keyValue) && !((boolean) curRow.get("isDeleted"))) {
 						// Check if the primary key is being changed
-						if(htblColNameValue.get(PKeyName) != null){
-							// If yes, check that the new value is not already used somewhere
+						if (htblColNameValue.get(PKeyName) != null) {
+							// If yes, check that the new value is not already
+							// used somewhere
 							Object newValue = htblColNameValue.get(PKeyName);
-							if(UpdateUtilities.checkNotUsed(strTableName,newValue, PKeyName)){
+							if (UpdateUtilities.checkNotUsed(strTableName, newValue, PKeyName)) {
 								// Update the tuple
-								for(String key : tblNameType.keySet()){
-									if(!key.equals(PKeyName) && htblColNameValue.containsKey(key))
+								for (String key : tblNameType.keySet()) {
+									if (htblColNameValue.containsKey(key))
 										curRow.put(key, htblColNameValue.get(key));
 								}
 								// Store it
-								Hashtable<String, Object> newTuple = curRow;
+								Hashtable<String, Object> newTuple = new Hashtable<>(curRow);
 								// Delete it
 								curRow.put("isDeleted", true);
 								// re-insert it to keep table sorted
@@ -169,11 +172,14 @@ public class DBApp {
 								done = true;
 								break;
 							}
+							else{
+								throw new DBAppException("Primary key value used somewhere.");
+							}
 						}
 						// if not, just update the table
-						else{
-							for(String key : tblNameType.keySet()){
-								if(!key.equals(PKeyName) && htblColNameValue.containsKey(key))
+						else {
+							for (String key : tblNameType.keySet()) {
+								if (!key.equals(PKeyName) && htblColNameValue.containsKey(key))
 									curRow.put(key, htblColNameValue.get(key));
 							}
 							done = true;
@@ -182,11 +188,14 @@ public class DBApp {
 					}
 				}
 				PageManager.serializePage(currentPage, "data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
-				if(done) break;
+				if (done)
+					break;
 				currentPgNo++;
 			} catch (Exception e) {
+				e.printStackTrace();
 				// No more pages and the row to be update still not found
-				throw new DBAppException("You are trying to update a non existing row, bitch!");
+				// throw new DBAppException("You are trying to update a non
+				// existing row, bitch!");
 			}
 		}
 		System.out.println("Update made successfully!");

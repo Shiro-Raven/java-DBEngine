@@ -11,7 +11,7 @@ public class UpdateUtilities {
 	public static boolean checkNotAllNulls(Hashtable<String, Object> htblColNameValue) {
 		int n = htblColNameValue.size();
 		for (String key : htblColNameValue.keySet())
-			if (htblColNameValue.get(key) == null)
+			if (htblColNameValue.get(key) != null)
 				n--;
 		return (n == 0);
 
@@ -76,6 +76,7 @@ public class UpdateUtilities {
 			} catch (Exception e) {
 				return true;
 			}
+			pageNum++;
 		}
 	}
 

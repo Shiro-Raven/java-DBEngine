@@ -39,7 +39,8 @@ public class PageManager {
 				System.out.println("End of Page " + page.getPageNumber());
 				break;
 			} else {
-				System.out.println("Row " + i + ": " + page.getRows()[i].toString());
+				if (!((boolean) page.getRows()[i].get("isDeleted")))
+					System.out.println("Row " + i + ": " + page.getRows()[i].toString());
 			}
 		}
 	}

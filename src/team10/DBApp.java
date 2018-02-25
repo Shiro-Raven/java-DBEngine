@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Set;
 
 public class DBApp {
 	public void init() {
@@ -204,4 +205,67 @@ public class DBApp {
 		}
 		System.out.println("Update made successfully!");
 	}
+
+	public void deleteFromTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
+		if (strTableName == null)
+			throw new DBAppException("No table name provided!");
+
+		if (htblColNameValue == null)
+			throw new DBAppException("No record provided!");
+
+		if (CreationUtilities.checkValidName(strTableName))
+			throw new DBAppException("Invalid table name!");
+
+		String line = null;
+		BufferedReader br = null;
+		Hashtable<String, String> colNameType = new Hashtable<>();
+		String primaryKey = null;
+
+		try {
+			br = new BufferedReader(new FileReader("data/metadata.csv"));
+			line = br.readLine();
+
+			while (line != null) {
+				String[] content = line.split(",");
+				if (content[0].equals(strTableName)) {
+					colNameType.put(content[1], content[2]);
+					if ((content[3].toLowerCase()).equals("true"))
+						primaryKey = content[1];
+				}
+				line = br.readLine();
+			}
+
+			br.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
+
+		if (!InsertionUtilities.isValidTuple(colNameType, htblColNameValue))
+			throw new DBAppException(
+					"The tuple you're trying to delete from table " + strTableName + " is not a valid tuple!");
+		
+		Set<String> tableKeys = colNameType.keySet();
+		
+		// all nulls throw exception
+		// assumption, subject to change after asking the doctor
+		boolean allNull = true;
+		for (String tableKey: tableKeys) {
+			if (htblColNameValue.get(tableKey) != null) {
+				allNull = false;
+				break;
+			}
+		}
+		if (allNull)
+			throw new DBAppException("All null values tuple!");
+		// end of assumption
+		
+		try {
+			DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
 }

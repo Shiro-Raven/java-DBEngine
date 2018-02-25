@@ -71,6 +71,56 @@ public class Tests {
 		htblColNameValue.put("birth_date", new Date(1997, 1, 1));
 		htblColNameValue.put("gender", true);
 		new DBApp().insertIntoTable("Student", htblColNameValue);
+		
+		// extra values to test cross page operations with MaximumRowsCountinPage = 5
+		htblColNameValue.put("id", 46);
+		htblColNameValue.put("first_name", "Ahmed");
+		htblColNameValue.put("last_name", "Mohammed");
+		htblColNameValue.put("gpa", 1.91);
+		htblColNameValue.put("birth_date", new Date(1997, 5, 5));
+		htblColNameValue.put("gender", false);
+		new DBApp().insertIntoTable("Student", htblColNameValue);
+
+		htblColNameValue.put("id", 68);
+		htblColNameValue.put("first_name", "Sarah");
+		htblColNameValue.put("last_name", "Khaled");
+		htblColNameValue.put("gpa", 0.92);
+		htblColNameValue.put("birth_date", new Date(1997, 4, 9));
+		htblColNameValue.put("gender", true);
+		new DBApp().insertIntoTable("Student", htblColNameValue);
+
+		htblColNameValue.put("id", 51);
+		htblColNameValue.put("first_name", "Hana");
+		htblColNameValue.put("last_name", "Ismail");
+		htblColNameValue.put("gpa", 0.92);
+		htblColNameValue.put("birth_date", new Date(1996, 11, 26));
+		htblColNameValue.put("gender", true);
+		new DBApp().insertIntoTable("Student", htblColNameValue);
+
+		htblColNameValue.put("id", 166);
+		htblColNameValue.put("first_name", "Omar");
+		htblColNameValue.put("last_name", "Elsayed");
+		htblColNameValue.put("gpa", 1.56);
+		htblColNameValue.put("birth_date", new Date(1997, 7, 12));
+		htblColNameValue.put("gender", false);
+		new DBApp().insertIntoTable("Student", htblColNameValue);
+
+		htblColNameValue.put("id", 178);
+		htblColNameValue.put("first_name", "Mostafa");
+		htblColNameValue.put("last_name", "Hashem");
+		htblColNameValue.put("gpa", 2.16);
+		htblColNameValue.put("birth_date", new Date(1997, 2, 17));
+		htblColNameValue.put("gender", false);
+		new DBApp().insertIntoTable("Student", htblColNameValue);
+
+		htblColNameValue.put("id", 501);
+		htblColNameValue.put("first_name", "Yasmeen");
+		htblColNameValue.put("last_name", "Khalafy");
+		htblColNameValue.put("gpa", 0.95);
+		htblColNameValue.put("birth_date", new Date(1997, 1, 1));
+		htblColNameValue.put("gender", true);
+		new DBApp().insertIntoTable("Student", htblColNameValue);
+		
 
 	}
 

@@ -100,15 +100,15 @@ public class DBApp {
 			throws DBAppException, ParseException {
 		// Check if null values in general
 		if (strTableName == null || strKey == null || htblColNameValue == null)
-			throw new DBAppException("Do not leave stuff null! Bitch!");
+			throw new DBAppException("Do not leave stuff null!");
 
 		// Check if all values are null
 		if (!UpdateUtilities.checkNotAllNulls(htblColNameValue))
-			throw new DBAppException("You want to update to nulls, huh? Bitch?");
+			throw new DBAppException("You want to update to nulls, huh?");
 
 		// Check if the table exists using checkValidName from CreationUtilites
 		if (CreationUtilities.checkValidName(strTableName))
-			throw new DBAppException("Do you know your tables? Bitch?");
+			throw new DBAppException("Do you know your tables?");
 
 		// Get Columns and Primary key of needed table (with its type)
 		ArrayList<Object> neededData = UpdateUtilities.getColumnsAndKey(strTableName);
@@ -118,7 +118,7 @@ public class DBApp {
 
 		// Check if valid tuple
 		if (!InsertionUtilities.isValidTuple(tblNameType, htblColNameValue))
-			throw new DBAppException("Stick to to the types, bitch!");
+			throw new DBAppException("Stick to to the types!");
 
 		Object keyValue = null;
 		// Cast key to its type (I am assuming no idiot would use Boolean as a
@@ -164,15 +164,19 @@ public class DBApp {
 										curRow.put(key, htblColNameValue.get(key));
 								}
 								// Store it
-								Hashtable<String, Object> newTuple = new Hashtable<>(curRow);
+								Hashtable<String, Object> newTuple = new Hashtable<>();
+								for (String key : curRow.keySet()) {
+									newTuple.put(key, curRow.get(key));
+								}
 								// Delete it
 								curRow.put("isDeleted", true);
+								PageManager.serializePage(currentPage,
+										"data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
 								// re-insert it to keep table sorted
 								insertIntoTable(strTableName, newTuple);
 								done = true;
 								break;
-							}
-							else{
+							} else {
 								throw new DBAppException("Primary key value used somewhere.");
 							}
 						}
@@ -182,20 +186,20 @@ public class DBApp {
 								if (!key.equals(PKeyName) && htblColNameValue.containsKey(key))
 									curRow.put(key, htblColNameValue.get(key));
 							}
+							PageManager.serializePage(currentPage,
+									"data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
 							done = true;
 							break;
 						}
 					}
 				}
-				PageManager.serializePage(currentPage, "data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
 				if (done)
 					break;
 				currentPgNo++;
 			} catch (Exception e) {
-				e.printStackTrace();
+				// e.printStackTrace();
 				// No more pages and the row to be update still not found
-				// throw new DBAppException("You are trying to update a non
-				// existing row, bitch!");
+				throw new DBAppException("You are trying to update a non-existing row!");
 			}
 		}
 		System.out.println("Update made successfully!");

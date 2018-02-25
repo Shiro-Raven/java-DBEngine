@@ -99,9 +99,9 @@ public class Tests {
 //		htblColNameValue.put("birth_date", new Date(1900, 1, 1));
 //		htblColNameValue.put("gender", false);
 //		new DBApp().insertIntoTable("Student", htblColNameValue);
-//		new DBApp().updateTable("Student", "197", htblColNameValue);
+//		new DBApp().updateTable("Student", "106", htblColNameValue);
 //		System.out.println(UpdateUtilities.checkNotUsed("Student", 197, "id"));
-		PageManager.printPageContents(PageManager.deserializePage("data/Student/page_1.ser"));
+		PageManager.printPageContents(PageManager.deserializePage("data/Student/page_2.ser"));
 
 	}
 

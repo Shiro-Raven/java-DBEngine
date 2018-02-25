@@ -8,8 +8,9 @@ public class Tests {
 	@SuppressWarnings("deprecation")
 	public static void main(String[] args) throws Exception {
 //
-//		// Declaring Columns & Their Types
-//		Hashtable<String, String> htblColNameType = new Hashtable<>();
+		// Declaring Columns & Their Types
+		@SuppressWarnings("unused")
+		Hashtable<String, String> htblColNameType = new Hashtable<>();
 //		htblColNameType.put("id", Integer.class.getName());
 //		htblColNameType.put("first_name", String.class.getName());
 //		htblColNameType.put("last_name", String.class.getName());
@@ -24,7 +25,7 @@ public class Tests {
 //
 //		// Insertions
 //		// 1
-//		Hashtable<String, Object> htblColNameValue = new Hashtable<>();
+		Hashtable<String, Object> htblColNameValue = new Hashtable<>();
 //		htblColNameValue.put("id", 1);
 //		htblColNameValue.put("first_name", "Ahmed");
 //		htblColNameValue.put("last_name", "Mohammed");
@@ -87,7 +88,7 @@ public class Tests {
 //		htblColNameValue.put("gender", true);
 //		new DBApp().insertIntoTable("Student", htblColNameValue);
 //		
-	htblColNameValue.put("id", 46);
+		htblColNameValue.put("id", 46);
 		htblColNameValue.put("first_name", "Ahmed");
 		htblColNameValue.put("last_name", "Mohammed");
 		htblColNameValue.put("gpa", 1.91);
@@ -140,7 +141,6 @@ public class Tests {
 		
 //		 "Student"
 //	 	Tests for the update
-		Hashtable<String, Object> htblColNameValue = new Hashtable<>();
 //		htblColNameValue.put("id", 107);
 		htblColNameValue.put("first_name", 5);
 //		htblColNameValue.put("last_name", null);

@@ -36,11 +36,12 @@ public class PageManager {
 	public static void printPageContents(Page page) {
 		for (int i = 0; i < page.getMaxRows(); i++) {
 			if (page.getRows()[i] == null) {
-				System.out.println("End of Page " + page.getPageNumber());
 				break;
 			} else {
 				System.out.println("Row " + i + ": " + page.getRows()[i].toString());
 			}
 		}
+
+		System.out.println("End of Page " + page.getPageNumber());
 	}
 }

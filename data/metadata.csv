@@ -1,6 +1,0 @@
-Student,gpa,java.lang.Double,false,false
-Student,last_name,java.lang.String,false,false
-Student,birthdate,java.util.Date,false,false
-Student,first_name,java.lang.String,false,false
-Student,gender,java.lang.Boolean,false,false
-Student,id,java.lang.Integer,true,false

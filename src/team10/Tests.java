@@ -89,19 +89,17 @@ public class Tests {
 //		
 //		System.out.println("Done");
 //		
-//		
-		// "Student"
+		
+//		 "Student"
 		Hashtable<String, Object> htblColNameValue = new Hashtable<>();
-		htblColNameValue.put("id", 107);
-//		htblColNameValue.put("first_name", "Hamada");
-//		htblColNameValue.put("last_name", "Yasta");
-//		htblColNameValue.put("gpa", 2.0);
+//		htblColNameValue.put("id", 107);
+		htblColNameValue.put("first_name", 5);
+//		htblColNameValue.put("last_name", null);
+		htblColNameValue.put("gpa", 2.0);
 //		htblColNameValue.put("birth_date", new Date(1900, 1, 1));
 //		htblColNameValue.put("gender", false);
-//		new DBApp().insertIntoTable("Student", htblColNameValue);
-//		new DBApp().updateTable("Student", "106", htblColNameValue);
-//		System.out.println(UpdateUtilities.checkNotUsed("Student", 197, "id"));
-		PageManager.printPageContents(PageManager.deserializePage("data/Student/page_2.ser"));
+		new DBApp().updateTable("Student", "106", htblColNameValue);
+//		PageManager.printPageContents(PageManager.deserializePage("data/Student/page_2.ser"));
 
 	}
 

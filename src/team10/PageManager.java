@@ -44,4 +44,12 @@ public class PageManager {
 
 		System.out.println("End of Page " + page.getPageNumber());
 	}
+
+	public static int getBRINSize() throws IOException {
+		FileReader fileReader = new FileReader("config/DBApp.properties");
+		Properties p = new Properties();
+		p.load(fileReader);
+		return Integer.parseInt(p.getProperty("BRINSize"));
+	}
+
 }

@@ -17,6 +17,29 @@ public class Page implements Serializable {
 		maxRows = PageManager.getMaximumRowsCountinPage();
 		rows = (Hashtable<String, Object>[]) new Hashtable<?, ?>[maxRows];
 	}
+	
+	// Modified To Satisfy BRIN Index
+	public Page(int pageNumber, PageType pageType) throws IOException, DBAppException {
+		
+		if(pageType == PageType.TABLE) {
+			
+			this.pageNumber = pageNumber;
+			maxRows = PageManager.getMaximumRowsCountinPage();
+			rows = (Hashtable<String, Object>[]) new Hashtable<?, ?>[maxRows];
+			
+		} else if(pageType == PageType.BRIN){
+			
+			this.pageNumber = pageNumber;
+			this.maxRows = PageManager.getBRINSize();
+			rows = (Hashtable<String, Object>[]) new Hashtable<?, ?>[maxRows];
+			
+		} else {
+			
+			throw new DBAppException();
+			
+		}
+		
+	}
 
 	public Hashtable<String, Object>[] getRows() {
 		return rows;

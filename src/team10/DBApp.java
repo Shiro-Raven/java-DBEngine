@@ -268,4 +268,10 @@ public class DBApp {
 
 	}
 
+	public void createBRINIndex(String strTableName, String strColumnName) throws DBAppException {
+		
+		
+		
+	}
+	
 }

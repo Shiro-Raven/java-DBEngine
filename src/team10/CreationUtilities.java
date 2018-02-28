@@ -8,7 +8,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 
 public class CreationUtilities {
-	static boolean checkValidName(String strTableName) {
+	protected static boolean checkValidName(String strTableName) {
 		// A more robust approach would be check the directories and metadata.csv the same time
 		File dataDirectory = new File("data");
 		File[] fileList = dataDirectory.listFiles();
@@ -26,7 +26,7 @@ public class CreationUtilities {
 
 	}
 
-	static boolean checkValidKeys(Hashtable<String, String> htblColNameType) {
+	protected static boolean checkValidKeys(Hashtable<String, String> htblColNameType) {
 		String[] supportedTypes = { "java.lang.Integer", "java.lang.String", "java.lang.Double", "java.lang.Boolean",
 				"java.util.Date" };
 		// get all the keys from the hashtable
@@ -42,7 +42,7 @@ public class CreationUtilities {
 		return true;
 	}
 
-	static boolean arrayContains(String[] array, String key) {
+	protected static boolean arrayContains(String[] array, String key) {
 		for (String element : array) {
 			if (key.equals(element))
 				return true;
@@ -51,7 +51,7 @@ public class CreationUtilities {
 	}
 
 	// check metadata.csv file exists
-	static boolean checkMeta() {
+	protected static boolean checkMeta() {
 		File metaFile = new File("data/metadata.csv");
 		if (metaFile.exists()) {
 			return true;
@@ -60,13 +60,13 @@ public class CreationUtilities {
 	}
 
 	// create a metadata.csv file
-	static void createMeta() throws IOException {
+	protected static void createMeta() throws IOException {
 		File metaFile = new File("data/metadata.csv");
 		metaFile.createNewFile();
 	}
 
 	// add meta data of table to metadaata.csv file
-	static void addMetaData(String strTableName, String strClusteringKeyColumn,
+	protected static void addMetaData(String strTableName, String strClusteringKeyColumn,
 			Hashtable<String, String> htblColNameType) throws DBAppException, IOException {
 		if (!checkValidClusteringKey(strClusteringKeyColumn, htblColNameType)) {
 			throw new DBAppException();
@@ -89,7 +89,7 @@ public class CreationUtilities {
 	}
 
 	// check whether the clustering key exists in the table declaration
-	static boolean checkValidClusteringKey(String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) {
+	protected static boolean checkValidClusteringKey(String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) {
 		Enumeration<String> htblKeys = htblColNameType.keys();
 		while (htblKeys.hasMoreElements()) {
 			String key = htblKeys.nextElement();
@@ -101,12 +101,13 @@ public class CreationUtilities {
 	}
 
 	// add a new Directory
-	static void addDirectory(String directoryName, String path) throws DBAppException {
+	protected static void addDirectory(String directoryName, String path) throws DBAppException {
 		File directory = new File(path + "/" + directoryName);
 		if (!directory.mkdir()) {
 			throw new DBAppException();
 		}
 
 	}
+	
 
 }

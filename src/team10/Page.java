@@ -18,7 +18,8 @@ public class Page implements Serializable {
 		rows = (Hashtable<String, Object>[]) new Hashtable<?, ?>[maxRows];
 	}
 	
-	// Modified To Satisfy BRIN Index
+	// Modified To Satisfy BRIN Index And Future Designs
+	@SuppressWarnings("unchecked")
 	public Page(int pageNumber, PageType pageType) throws IOException, DBAppException {
 		
 		if(pageType == PageType.TABLE) {

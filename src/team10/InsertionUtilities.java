@@ -23,7 +23,7 @@ public class InsertionUtilities {
 		while (true) {
 			try {
 				currentPage = PageManager.deserializePage("data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
-			} catch (Exception e) {
+			} catch (IOException | ClassNotFoundException e) {
 				// we need a new page
 				if (currentPage == null)
 					return new int[] { 1, 0 };
@@ -124,8 +124,8 @@ public class InsertionUtilities {
 						"data/" + strTableName + "/" + primaryKey + "/" + "page_" + indexPageNumber + ".ser");
 
 				// search the page, find the position of the entry
-				int positionInIndex = searchIndexForInsertion(indexPage.getRows(),
-						(Comparable) htblColNameValue.get(primaryKey), primaryKey);
+				int positionInIndex = searchIndex(indexPage.getRows(), (Comparable) htblColNameValue.get(primaryKey),
+						primaryKey);
 
 				// if not within any range in this index page, load the next
 				// page
@@ -146,7 +146,7 @@ public class InsertionUtilities {
 					try {
 						pageToInsertAt = PageManager
 								.deserializePage("data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
-					} catch (Exception e) {
+					} catch (IOException |ClassNotFoundException e) {
 						// unexpected error
 						// could not load the page
 						e.printStackTrace();
@@ -167,11 +167,17 @@ public class InsertionUtilities {
 
 				}
 
-			} catch (Exception e) {
+			} catch (IOException | ClassNotFoundException e) {
 				// no more index pages
 				// get pageNumber; it must be the last entry in the previous
 				// index page
 				// because of how searchIndexForInsertion() works
+
+				//column was indexed but the current table has no values
+				if (indexPage == null) {
+					return new int[] { 1, 0 };
+				}
+
 				int pageNumber;
 				pageNumber = (int) indexPage.getRows()[indexPage.getRows().length - 1].get("pageNumber");
 
@@ -181,7 +187,7 @@ public class InsertionUtilities {
 				try {
 					pageToInsertAt = PageManager
 							.deserializePage("data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
-				} catch (Exception e2) {
+				} catch (IOException | ClassNotFoundException e2) {
 					// unexpected error
 					// could not load the page
 					e2.printStackTrace();
@@ -192,7 +198,7 @@ public class InsertionUtilities {
 
 				// check the position
 
-				// cannot insert in this page
+				// cannot insert in this page, insert in next
 				if (positionToInsertAt == -1) {
 					pageNumber++;
 					positionToInsertAt = 0;
@@ -204,7 +210,7 @@ public class InsertionUtilities {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private static int searchIndexForInsertion(Hashtable<String, Object>[] rows, Comparable target, String primaryKey) {
+	private static int searchIndex(Hashtable<String, Object>[] rows, Comparable target, String primaryKey) {
 		for (int i = 0; i < rows.length; i++) {
 
 			// the index's page is not fully empty and we reached the end of its
@@ -276,5 +282,4 @@ public class InsertionUtilities {
 		// Therefore, we insert in the first position of the next page
 		return -1;
 	}
-
 }

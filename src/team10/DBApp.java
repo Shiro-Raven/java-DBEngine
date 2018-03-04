@@ -50,7 +50,8 @@ public class DBApp {
 		}
 
 		ArrayList<String[]> data = new ArrayList<>();
-		ArrayList<String> primary_key = new ArrayList<>();
+		String primary_key = null;
+		ArrayList<String> indexed_columns = new ArrayList<>();
 		Hashtable<String, String> ColNameType = new Hashtable<>();
 
 		while (line != null) {
@@ -60,7 +61,9 @@ public class DBApp {
 				data.add(content);
 				ColNameType.put(content[1], content[2]);
 				if ((content[3].toLowerCase()).equals("true"))
-					primary_key.add(content[1]);
+					primary_key = content[1];
+				if (content[4].toLowerCase().equals("true"))
+					indexed_columns.add(content[1]);
 			}
 			try {
 				line = br.readLine();
@@ -78,16 +81,21 @@ public class DBApp {
 		if (data.isEmpty())
 			throw new DBAppException("404 Table Not Found !");
 
-		for (String key : primary_key)
-			if (htblColNameValue.get(key).equals(null))
-				throw new DBAppException("Primary Key Can NOT be null");
+		if (htblColNameValue.get(primary_key).equals(null))
+			throw new DBAppException("Primary Key Can NOT be null");
 
 		if (!InsertionUtilities.isValidTuple(ColNameType, htblColNameValue))
 			throw new DBAppException(
 					"The tuple you're trying to insert into table " + strTableName + " is not a valid tuple!");
 
-		int[] positionToInsertAt = InsertionUtilities.searchForInsertionPosition(strTableName, primary_key,
-				htblColNameValue);
+		int[] positionToInsertAt;
+		if (indexed_columns.contains(primary_key)) {
+			positionToInsertAt = InsertionUtilities.searchForInsertionPositionIndexed(strTableName, primary_key,
+					htblColNameValue);
+		} else {
+			positionToInsertAt = InsertionUtilities.searchForInsertionPosition(strTableName, primary_key,
+					htblColNameValue);
+		}
 		try {
 			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue);
 		} catch (IOException e) {
@@ -244,13 +252,13 @@ public class DBApp {
 		if (!InsertionUtilities.isValidTuple(colNameType, htblColNameValue))
 			throw new DBAppException(
 					"The tuple you're trying to delete from table " + strTableName + " is not a valid tuple!");
-		
+
 		Set<String> tableKeys = colNameType.keySet();
-		
+
 		// all nulls throw exception
 		// assumption, subject to change after asking the doctor
 		boolean allNull = true;
-		for (String tableKey: tableKeys) {
+		for (String tableKey : tableKeys) {
 			if (htblColNameValue.get(tableKey) != null) {
 				allNull = false;
 				break;
@@ -259,7 +267,7 @@ public class DBApp {
 		if (allNull)
 			throw new DBAppException("All null values tuple!");
 		// end of assumption
-		
+
 		try {
 			DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
 		} catch (IOException e) {
@@ -269,9 +277,7 @@ public class DBApp {
 	}
 
 	public void createBRINIndex(String strTableName, String strColumnName) throws DBAppException {
-		
-		
-		
+
 	}
-	
+
 }

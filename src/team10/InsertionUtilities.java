@@ -1,6 +1,8 @@
 package team10;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Set;
@@ -120,8 +122,8 @@ public class InsertionUtilities {
 		while (true) {
 			try {
 				// retrieve the index page
-				indexPage = PageManager.deserializePage(
-						"data/" + strTableName + "/" + primaryKey + "/" + "page_" + indexPageNumber + ".ser");
+				indexPage = PageManager.deserializePage("data/" + strTableName + "/" + primaryKey + "/indices/BRIN"
+						+ "page_" + indexPageNumber + ".ser");
 
 				// search the page, find the position of the entry
 				int positionInIndex = searchIndex(indexPage.getRows(), (Comparable) htblColNameValue.get(primaryKey),
@@ -146,7 +148,7 @@ public class InsertionUtilities {
 					try {
 						pageToInsertAt = PageManager
 								.deserializePage("data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
-					} catch (IOException |ClassNotFoundException e) {
+					} catch (IOException | ClassNotFoundException e) {
 						// unexpected error
 						// could not load the page
 						e.printStackTrace();
@@ -173,7 +175,7 @@ public class InsertionUtilities {
 				// index page
 				// because of how searchIndexForInsertion() works
 
-				//column was indexed but the current table has no values
+				// column was indexed but the current table has no values
 				if (indexPage == null) {
 					return new int[] { 1, 0 };
 				}
@@ -282,4 +284,128 @@ public class InsertionUtilities {
 		// Therefore, we insert in the first position of the next page
 		return -1;
 	}
+
+	protected static ArrayList<Integer> updateDenseIndexAfterInsertion(String tableName, String columnName,
+			int numberOfPageOfInsertion, int rowNumberOfInsertion, Object value) {
+
+		int relationPageNumber = numberOfPageOfInsertion;
+		int relationRowNumber = rowNumberOfInsertion;
+
+		// array list to use in updating the brin index
+		ArrayList<Integer> changedPagesInDenseIndex = new ArrayList<>();
+
+		addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName, value);
+
+		// point to the value after the insertion
+		// comparison works only because the dense index has the same size as
+		// the original relation
+		try {
+			if (relationRowNumber + 1 > PageManager.getMaximumRowsCountinPage() - 1) // relationRowNumber+1>199
+				relationRowNumber = 0;
+			else
+				relationRowNumber++;
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+		while (true) {
+			try {
+				// load relation page
+				Page currentPage = PageManager.deserializePage("data/" + tableName + "/" + columnName + "/indices/BRIN"
+						+ "page_" + relationPageNumber + ".ser");
+
+				// loop over the values
+				Hashtable<String, Object>[] relationRows = currentPage.getRows();
+
+				for (int i = relationRowNumber; i < relationRows.length; i++) {
+
+					if (relationRows[i] == null) {
+						return changedPagesInDenseIndex;
+					}
+					int previousRowNumber = relationRowNumber - 1;
+					int previousPageNumber = currentPage.getPageNumber();
+					if (previousRowNumber < 0) {
+						previousRowNumber = currentPage.getMaxRows() - 1;
+						previousPageNumber = currentPage.getPageNumber() - 1;
+					}
+
+					Hashtable<String, Object> previousIndexEntry = new Hashtable<>();
+					previousIndexEntry.put("pageNumber", previousPageNumber);
+					previousIndexEntry.put("locInPage", previousRowNumber);
+					previousIndexEntry.put("value", relationRows[relationRowNumber].get(columnName));
+
+					Hashtable<String, Object> newIndexEntry = new Hashtable<>();
+					previousIndexEntry.put("pageNumber", currentPage.getPageNumber());
+					previousIndexEntry.put("locInPage", relationRowNumber);
+					previousIndexEntry.put("value", relationRows[relationRowNumber].get(columnName));
+
+					int editedIndexPage = findAndReplaceInDenseIndex(tableName, columnName, previousIndexEntry,
+							newIndexEntry);
+
+					if (!changedPagesInDenseIndex.contains(editedIndexPage)) {
+						changedPagesInDenseIndex.add(editedIndexPage);
+					}
+
+				}
+				// proceed to the next page
+				relationPageNumber++;
+				relationRowNumber = 0;
+
+			} catch (IOException | ClassNotFoundException e) {
+				// no more pages
+				return changedPagesInDenseIndex;
+			}
+		}
+	}
+
+	protected static void addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber, String columnName,
+			Object newValue) {
+		// stick to the strict sorting here
+
+	}
+
+	protected static int findAndReplaceInDenseIndex(String tableName, String columnName,
+			Hashtable<String, Object> oldEntry, Hashtable<String, Object> newEntry) {
+		// binary search can return -1 or -2, check below
+
+		return -1;
+	}
+
+	protected static int denseIndexBinarySearch(Hashtable<String, Object>[] indexPageRows, int left, int right,
+			Hashtable<String, Object> target) {
+		if (right >= left) {
+			int mid = left + (right - left) / 2;
+
+			// if a null value is encountered, then the page is not full
+			// signal that a linear search should start with -2
+			if (indexPageRows[mid] == null)
+				return -2;
+
+			// If the element is present at the
+			// middle itself
+			if (compareIndexElements(indexPageRows[mid], target) == 0)
+				return mid;
+
+			// If element is smaller than mid, then
+			// it can only be present in left subarray
+			if (compareIndexElements(indexPageRows[mid], target) == -1)
+				return denseIndexBinarySearch(indexPageRows, left, mid - 1, target);
+
+			// Else the element can only be present
+			// in right subarray
+			return denseIndexBinarySearch(indexPageRows, mid + 1, right, target);
+		}
+
+		// We reach here when element is not present
+		// in array
+		return -1;
+	}
+	
+	protected static int compareIndexElements(Hashtable<String,Object> pageEntry, Hashtable<String,Object> otherEntry){
+		//implement an incremental key comparison
+			
+		}
+		
+	}
+
 }

@@ -74,15 +74,15 @@ public class CreationUtilities {
 		Enumeration<String> htblKeys = htblColNameType.keys();
 		FileWriter metaWriter = new FileWriter("data/metadata.csv", true);
 		while (htblKeys.hasMoreElements()) {
-			String name = htblKeys.nextElement();
+			String colName = htblKeys.nextElement();
 			String isIndexed = "false";
 			String isClusteringKey = "";
-			if (name.equals(strClusteringKeyColumn))
+			if (colName.equals(strClusteringKeyColumn))
 				isClusteringKey = "true";
 			else
 				isClusteringKey = "false";
-			String type = htblColNameType.get(name);
-			metaWriter.write(strTableName + "," + name + "," + type + "," + isClusteringKey + "," + isIndexed + "\n");
+			String type = htblColNameType.get(colName);
+			metaWriter.write(strTableName + "," + colName + "," + type + "," + isClusteringKey + "," + isIndexed + "\n");
 
 		}
 		metaWriter.close();

@@ -57,16 +57,16 @@ public class IndexUtilities {
 
 	// BRIN index business logic for now
 	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary) {
-
+		
 	}
 
 	// Creates dense index of the given column in the given table
 	protected static void createDenseIndex(String strTableName, String strColumnName) {
-
+		
 	}
 
 	// Retrieve all pages in a given path
-	protected static ArrayList<Page> getAllTablePages(String filepath) throws IOException, ClassNotFoundException {
+	protected static ArrayList<Page> retreiveAllTablePages(String filepath) throws IOException, ClassNotFoundException {
 
 		IndexUtilities.validateDirectory(filepath);
 		ArrayList<Page> pages = new ArrayList<Page>();

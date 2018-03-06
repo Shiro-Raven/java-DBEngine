@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class IndexUtilities {
 
 	// Checks if the directory of table exists
-	protected static boolean tableDirectoryExists(String strTableName) throws DBAppException {
+	protected static boolean tableDirectoryExists(String strTableName) {
 		File tableFile = new File("data/" + strTableName);
 		if (tableFile.exists() && tableFile.isDirectory()) {
 			return true;
@@ -62,13 +62,12 @@ public class IndexUtilities {
 
 	// Creates dense index of the given column in the given table
 	protected static void createDenseIndex(String strTableName, String strColumnName) {
-		
 	}
 
 	// Retrieve all pages in a given path
-	protected static ArrayList<Page> retreiveAllTablePages(String filepath) throws IOException, ClassNotFoundException {
-
-		IndexUtilities.validateDirectory(filepath);
+	protected static ArrayList<Page> retreiveAllTablePages(String filepath) throws IOException, ClassNotFoundException, DBAppException {
+		if(!tableDirectoryExists(filepath))
+			throw new DBAppException("Table does not exist");
 		ArrayList<Page> pages = new ArrayList<Page>();
 		File files = new File(filepath);
 
@@ -85,7 +84,7 @@ public class IndexUtilities {
 	}
 
 	// check a file path and create directories that don't exist through the file path on the file system
-	protected static void validateDirectory(String filepath) throws IOException {
+	protected static void fillDirectories(String filepath) throws IOException {
 
 		String[] pathParams = filepath.split("/");
 		filepath = "";

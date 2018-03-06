@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class IndexUtilities {
 
 	// Checks if the directory of table exists
-	protected static boolean tableDirectoryExists(String strTableName) {
+	protected static boolean tableDirectoryExists(String strTableName) throws DBAppException {
 		File tableFile = new File("data/" + strTableName);
 		if (tableFile.exists() && tableFile.isDirectory()) {
 			return true;
@@ -57,17 +57,43 @@ public class IndexUtilities {
 
 	// BRIN index business logic for now
 	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary) {
-		
+
 	}
 
 	// Creates dense index of the given column in the given table
 	protected static void createDenseIndex(String strTableName, String strColumnName) {
 	}
 
+	// Get a page based on the containing directory path
+	// Throws a DBAppException in case the file path does not point to a directory
+	// Throws a DBAppException in case the page does not exist
+	protected static Page retreivePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
+		File pageDirectory = new File(pageDirectoryPath);
+		if (!pageDirectory.exists()) {
+			throw new DBAppException("The file path supplied does not exist");
+		}
+		if (!pageDirectory.isDirectory()) {
+			throw new DBAppException("The file path supplied to retrieve the page is not a directory");
+		}
+		File pageFile = new File(pageDirectoryPath + "page_" + pageNumber + ".ser");
+		if (!pageFile.exists()) {
+			throw new DBAppException("The page file does not exist");
+		}
+		try {
+			return PageManager.deserializePage(pageFile.getPath());
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+
+	}
+
 	// Retrieve all pages in a given path
-	protected static ArrayList<Page> retreiveAllTablePages(String filepath) throws IOException, ClassNotFoundException, DBAppException {
-		if(!tableDirectoryExists(filepath))
-			throw new DBAppException("Table does not exist");
+	protected static ArrayList<Page> retreiveAllPages(String filepath) throws IOException, ClassNotFoundException {
+
+		IndexUtilities.validateDirectory(filepath);
 		ArrayList<Page> pages = new ArrayList<Page>();
 		File files = new File(filepath);
 
@@ -83,8 +109,9 @@ public class IndexUtilities {
 
 	}
 
-	// check a file path and create directories that don't exist through the file path on the file system
-	protected static void fillDirectories(String filepath) throws IOException {
+	// check a file path and create directories that don't exist through the file
+	// path on the file system
+	protected static void validateDirectory(String filepath) throws IOException {
 
 		String[] pathParams = filepath.split("/");
 		filepath = "";

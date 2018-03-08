@@ -15,6 +15,9 @@ import java.util.Set;
  *         will not produce right results.
  *
  */
+
+// important!!!!: Not all PageManager.deserialize can be replaced with
+// loadPage!!! And so is the case with indices.
 public class InsertionUtilities {
 
 	public static int[] searchForInsertionPosition(String strTableName, String primaryKey,
@@ -122,7 +125,7 @@ public class InsertionUtilities {
 		while (true) {
 			try {
 				// retrieve the index page
-				indexPage = PageManager.deserializePage("data/" + strTableName + "/" + primaryKey + "/indices/BRIN"
+				indexPage = PageManager.deserializePage("data/" + strTableName + "/" + primaryKey + "/indices/BRIN/"
 						+ "page_" + indexPageNumber + ".ser");
 
 				// search the page, find the position of the entry
@@ -294,7 +297,7 @@ public class InsertionUtilities {
 		// array list to use in updating the brin index
 		ArrayList<Integer> changedPagesInDenseIndex = new ArrayList<>();
 
-		addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName, value);
+		addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value);
 
 		// point to the value after the insertion
 		// comparison works only because the dense index has the same size as
@@ -307,12 +310,12 @@ public class InsertionUtilities {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-
+		Page previousPage = null;
 		while (true) {
 			try {
 				// load relation page
-				Page currentPage = PageManager.deserializePage("data/" + tableName + "/" + columnName + "/indices/BRIN"
-						+ "page_" + relationPageNumber + ".ser");
+				Page currentPage = PageManager.deserializePage("data/" + tableName + "/" + columnName
+						+ "/indices/Dense/" + "page_" + relationPageNumber + ".ser");
 
 				// loop over the values
 				Hashtable<String, Object>[] relationRows = currentPage.getRows();
@@ -332,6 +335,8 @@ public class InsertionUtilities {
 					Hashtable<String, Object> previousIndexEntry = new Hashtable<>();
 					previousIndexEntry.put("pageNumber", previousPageNumber);
 					previousIndexEntry.put("locInPage", previousRowNumber);
+					System.out.println("RowNumber: " + relationRowNumber);
+					// exception when row number = 0???
 					previousIndexEntry.put("value", relationRows[relationRowNumber].get(columnName));
 
 					Hashtable<String, Object> newIndexEntry = new Hashtable<>();
@@ -348,27 +353,172 @@ public class InsertionUtilities {
 
 				}
 				// proceed to the next page
+				previousPage = currentPage;
 				relationPageNumber++;
 				relationRowNumber = 0;
 
 			} catch (IOException | ClassNotFoundException e) {
 				// no more pages
+
+				// safety check
+				while (changedPagesInDenseIndex.contains(-1)) {
+					changedPagesInDenseIndex.remove(-1);
+				}
+
 				return changedPagesInDenseIndex;
 			}
 		}
 	}
 
+	// revise if errors occur
 	protected static void addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber, String columnName,
-			Object newValue) {
-		// stick to the strict sorting here
+			String tableName, Object newValue) {
+
+		Hashtable<String, Object> newEntry = new Hashtable<>();
+		newEntry.put("value", newValue);
+		newEntry.put("pageNumber", relationPageNumber);
+		newEntry.put("locInPage", relationRowNumber);
+
+		int pageNumber = 1;
+		int targetLocation = 0;
+		Loop: while (true) {
+			Page currentPage = null;
+			try {
+				currentPage = PageManager.deserializePage(
+						"data/" + tableName + "/" + columnName + "/indices/Dense/page_" + pageNumber + ".ser");
+			} catch (IOException | ClassNotFoundException e) {
+				// we need a new page
+				targetLocation = 0;
+				break Loop;
+			}
+			Hashtable<String, Object>[] rows = currentPage.getRows();
+			for (int i = 0; i < rows.length; i++) {
+				if (rows[i] == null) {
+					targetLocation = i;
+					break Loop;
+				}
+				// if page entry is bigger in value
+				if (compareIndexElements(rows[i], newEntry) == -1) {
+					targetLocation = i;
+					break Loop;
+				}
+			}
+			pageNumber++;
+		}
+
+		try {
+			insertIntoDenseIndex(tableName, columnName, pageNumber, targetLocation, newEntry);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	protected static boolean insertIntoDenseIndex(String tableName, String columnName, int pageNumber, int rowNumber,
+			Hashtable<String, Object> htblColNameValue) throws IOException {
+		Page page = InsertionUtilities.loadDenseIndexPage(tableName, columnName, pageNumber);
+		int maxRows = PageManager.getMaximumRowsCountinPage();
+		Hashtable<String, Object> tempHtblColNameValue;
+
+		for (int i = rowNumber; i < maxRows; i++) {
+
+			tempHtblColNameValue = page.getRows()[i];
+			page.getRows()[i] = htblColNameValue;
+			htblColNameValue = tempHtblColNameValue;
+
+			if (htblColNameValue == null)
+				break;
+
+			if (i == maxRows - 1) {
+
+				i = -1; // Reset i
+				PageManager.serializePage(page, "data/" + tableName + "/" + columnName + "/indices/Dense/" + "page_"
+						+ page.getPageNumber() + ".ser");
+				page = InsertionUtilities.loadDenseIndexPage(tableName, columnName, ++pageNumber);
+
+			}
+
+		}
+
+		PageManager.serializePage(page,
+				"data/" + tableName + "/" + columnName + "/indices/Dense/" + "page_" + page.getPageNumber() + ".ser");
+		return true;
+	}
+
+	// warning: should not be used to load pages in a loop; the loop will become
+	// infinite as new pages are created
+	public static Page loadDenseIndexPage(String tableName, String columnName, int pageNumber) throws IOException {
+
+		Page page;
+
+		try {
+
+			page = PageManager.deserializePage(
+					"data/" + tableName + "/" + columnName + "/indices/Dense/" + "page_" + pageNumber + ".ser");
+
+		} catch (Exception e) {
+
+			page = new Page(pageNumber);
+
+		}
+
+		return page;
 
 	}
 
 	protected static int findAndReplaceInDenseIndex(String tableName, String columnName,
 			Hashtable<String, Object> oldEntry, Hashtable<String, Object> newEntry) {
 		// binary search can return -1 or -2, check below
+		Page currentPage = null;
+		int pageNumber = 1;
+		while (true) {
+			try {
+				currentPage = PageManager.deserializePage(
+						"data/" + tableName + "/" + columnName + "/indices/Dense/" + "page_" + pageNumber + ".ser");
+			} catch (IOException | ClassNotFoundException e) {
+				e.printStackTrace();
+				return -1;
+			}
 
-		return -1;
+			int binarySearchResult = denseIndexBinarySearch(currentPage.getRows(), 0, currentPage.getRows().length - 1,
+					oldEntry);
+
+			// null was encountered
+			if (binarySearchResult == -2) {
+				int linearSearchResult = denseIndexLinearSearch(currentPage, oldEntry);
+				if (linearSearchResult != -1) {
+					currentPage.getRows()[linearSearchResult] = newEntry;
+
+					try {
+						PageManager.serializePage(currentPage, "data/" + tableName + "/" + columnName
+								+ "/indices/Dense/" + "page_" + currentPage.getPageNumber() + ".ser");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+					return currentPage.getPageNumber();
+				} else {
+					return -1;
+				}
+			}
+
+			// search yielded a result
+			if (binarySearchResult != -1) {
+				currentPage.getRows()[binarySearchResult] = newEntry;
+
+				try {
+					PageManager.serializePage(currentPage, "data/" + tableName + "/" + columnName + "/indices/Dense/"
+							+ "page_" + currentPage.getPageNumber() + ".ser");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+				return currentPage.getPageNumber();
+			}
+
+			// the search yielded no results
+			pageNumber++;
+
+		}
 	}
 
 	protected static int denseIndexBinarySearch(Hashtable<String, Object>[] indexPageRows, int left, int right,
@@ -400,12 +550,44 @@ public class InsertionUtilities {
 		// in array
 		return -1;
 	}
-	
-	protected static int compareIndexElements(Hashtable<String,Object> pageEntry, Hashtable<String,Object> otherEntry){
-		//implement an incremental key comparison
-			
+
+	protected static int denseIndexLinearSearch(Page indexPage, Hashtable<String, Object> searchValue) {
+
+		Hashtable<String, Object>[] rows = indexPage.getRows();
+
+		for (int i = 0; i < rows.length; i++) {
+			if (compareIndexElements(rows[i], searchValue) == 0) {
+				return i;
+			}
 		}
-		
+
+		// not found
+		return -1;
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected static int compareIndexElements(Hashtable<String, Object> pageEntry,
+			Hashtable<String, Object> otherEntry) {
+		// implement an incremental key comparison
+		if (((Comparable) pageEntry.get("locInPage")).compareTo((Comparable) otherEntry.get("locInPage")) == 0
+				&& ((Comparable) pageEntry.get("pageNumber")).compareTo((Comparable) otherEntry.get("pageNumber")) == 0
+				&& ((Comparable) pageEntry.get("value")).compareTo((Comparable) otherEntry.get("value")) == 0) {
+			return 0;
+		} else {
+			String[] hashtableKeys = { "value", "pageNumber", "locInPage" };
+			for (int i = 0; i < 3; i++) {
+				// other entry is less than the page entry
+				if (((Comparable) otherEntry.get(hashtableKeys[i]))
+						.compareTo((Comparable) pageEntry.get(hashtableKeys[i])) == -1) {
+					return -1;
+				} else if (((Comparable) pageEntry.get(hashtableKeys[i]))
+						.compareTo((Comparable) otherEntry.get(hashtableKeys[i])) == 0) {
+					continue;
+				} else
+					return 1;
+			}
+		}
+		System.out.println("Inside compareIndexElements. Shouldn't be here");
+		return 0;
+	}
 }

@@ -101,6 +101,11 @@ public class DBApp {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+
+		for (int i = 0; i < indexed_columns.size(); i++) {
+			InsertionUtilities.updateDenseIndexAfterInsertion(strTableName, indexed_columns.get(i),
+					positionToInsertAt[0], positionToInsertAt[1], htblColNameValue.get(indexed_columns.get(i)));
+		}
 		System.out.println("Tuple Inserted!");
 	}
 

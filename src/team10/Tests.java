@@ -7,34 +7,44 @@ import java.util.Date;
 import java.util.Hashtable;
 
 public class Tests {
-	//redo this test in this order and discover new bugs
+	// redo this test in this order and discover new bugs
 	public static void main(String[] args) throws DBAppException, Exception, IOException {
-		int[] id = { 5,4,1,2,3,6,7,10,9,8,54,53,244,21,56 };
-		String[] firstName = { "Ahmed","Ahmed","hell","hell",
-				"Mohamed","zzz","lovelife","Psychopass new movie","Yes, Darwish, rejoice",
-				"Reda is a computer fanatic... or is he?","I am evil","I am zen", "I am aku",
-				"Life is a waterfall",""};
+		int[] id = { 5, 4, 1, 2, 3, 6, 7, 10, 9, 8, 54, 53, 244, 21, 56 };
+		// failed! problem: neighboring duplicates, and perhaps more...
+		 String[] firstName = { "ahmed","ahmed","hell","hell",
+		 "mohamed","zzz","lovelife","psychopass new movie","yes, darwish, rejoice",
+		 "reda is a computer fanatic... or is he?","i am evil","i am zen", "i am aku",
+		 "life is a waterfall",""};
+
+		 //passed!
+//		 String[] firstName = { "ahmed","notAhmed","hell","nothell",
+//		 "mohamed","zzz","lovelife","psychopass new movie","yes Darwish rejoice",
+//		 "reda is a computer fanatic or is he?","i am evil","ahmed", "i am aku",
+//		 "life is a waterfall",""};
 		for (int i = 0; i < id.length; i++) {
 			Hashtable<String, Object> row = new Hashtable<>();
 			row.put("id", id[i]);
 			row.put("first_name", firstName[i]);
 			DBApp app = new DBApp();
 			app.insertIntoTable("idTest", row);
-		}	
-		
-		 System.out.println("Table:");
-		 for (int i = 1; i <= 3; i++) {
-		 Page page = PageManager.deserializePage("data/idTest/page_" + i +
-		 ".ser");
-		 PageManager.printPageContents(page);
-		 }
-		 System.out.println("Dense Index on First Name:");
-		 for (int i = 1; i <= 3; i++) {
-		 Page page =
-		 PageManager.deserializePage("data/idTest/first_name/Indices/Dense/page_"
-		 + i + ".ser");
-		 PageManager.printPageContents(page);
-		 }
+		}
+
+		// Hashtable<String, Object> row = new Hashtable<>();
+		// row.put("id", 1);
+		// row.put("first_name", "hell");
+		// DBApp app = new DBApp();
+		// app.insertIntoTable("idTest", row);
+
+		System.out.println("Table:");
+		for (int i = 1; i <= 3; i++) {
+			Page page = PageManager.deserializePage("data/idTest/page_" + i + ".ser");
+			PageManager.printPageContents(page);
+		}
+		System.out.println("Dense Index on First Name:");
+		for (int i = 1; i <= 3; i++) {
+			Page page = PageManager.deserializePage("data/idTest/first_name/Indices/Dense/page_" + i + ".ser");
+			PageManager.printPageContents(page);
+		}
 
 	}
 

@@ -277,7 +277,7 @@ public class InsertionUtilities {
 			// The primary key value from toInsertTuple was less than the value
 			// from
 			// currentRow
-			if (comparisonResult == -1) {
+			if (comparisonResult < 0) {
 				rowNumber = i;
 				return rowNumber;
 			}
@@ -297,25 +297,15 @@ public class InsertionUtilities {
 		// array list to use in updating the brin index
 		ArrayList<Integer> changedPagesInDenseIndex = new ArrayList<>();
 
-		addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value);
-
 		// point to the value after the insertion
-		// comparison works only because the dense index has the same size as
-		// the original relation
-		try {
-			if (relationRowNumber + 1 > PageManager.getMaximumRowsCountinPage() - 1) // relationRowNumber+1>199
-				relationRowNumber = 0;
-			else
-				relationRowNumber++;
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
-		Page previousPage = null;
+		relationRowNumber++;
+
+		
 		while (true) {
 			try {
 				// load relation page
-				Page currentPage = PageManager.deserializePage("data/" + tableName + "/" + columnName
-						+ "/indices/Dense/" + "page_" + relationPageNumber + ".ser");
+				Page currentPage = PageManager
+						.deserializePage("data/" + tableName + "/" + "page_" + relationPageNumber + ".ser");
 
 				// loop over the values
 				Hashtable<String, Object>[] relationRows = currentPage.getRows();
@@ -323,27 +313,50 @@ public class InsertionUtilities {
 				for (int i = relationRowNumber; i < relationRows.length; i++) {
 
 					if (relationRows[i] == null) {
+						addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName,
+								value);
 						return changedPagesInDenseIndex;
 					}
-					int previousRowNumber = relationRowNumber - 1;
-					int previousPageNumber = currentPage.getPageNumber();
-					if (previousRowNumber < 0) {
-						previousRowNumber = currentPage.getMaxRows() - 1;
-						previousPageNumber = currentPage.getPageNumber() - 1;
+
+					int previousRowNumber;
+					int previousPageNumber;
+
+					// calculate where the entry was previously
+					// not first row
+					if (i - 1 >= 0) {
+						previousRowNumber = i - 1;
+						previousPageNumber = currentPage.getPageNumber();
 					}
 
+					// at first row
+					else {
+						// we are at the first page
+						if (currentPage.getPageNumber() == 1) {
+							previousPageNumber = 1;
+							previousRowNumber = 0;
+						}
+
+						// we are not at the first page
+						else {
+							previousPageNumber = currentPage.getPageNumber() - 1;
+							previousRowNumber = currentPage.getRows().length - 1;
+						}
+
+					}
+
+					// previous entry
 					Hashtable<String, Object> previousIndexEntry = new Hashtable<>();
 					previousIndexEntry.put("pageNumber", previousPageNumber);
 					previousIndexEntry.put("locInPage", previousRowNumber);
-					System.out.println("RowNumber: " + relationRowNumber);
-					// exception when row number = 0???
-					previousIndexEntry.put("value", relationRows[relationRowNumber].get(columnName));
+					previousIndexEntry.put("value", relationRows[i].get(columnName));
 
+					// new entry
 					Hashtable<String, Object> newIndexEntry = new Hashtable<>();
-					previousIndexEntry.put("pageNumber", currentPage.getPageNumber());
-					previousIndexEntry.put("locInPage", relationRowNumber);
-					previousIndexEntry.put("value", relationRows[relationRowNumber].get(columnName));
-
+					newIndexEntry.put("pageNumber", currentPage.getPageNumber());
+					newIndexEntry.put("locInPage", i);
+					newIndexEntry.put("value", relationRows[i].get(columnName));
+					System.out.println(previousIndexEntry);
+					System.out.println(newIndexEntry);
 					int editedIndexPage = findAndReplaceInDenseIndex(tableName, columnName, previousIndexEntry,
 							newIndexEntry);
 
@@ -352,8 +365,8 @@ public class InsertionUtilities {
 					}
 
 				}
+
 				// proceed to the next page
-				previousPage = currentPage;
 				relationPageNumber++;
 				relationRowNumber = 0;
 
@@ -362,9 +375,10 @@ public class InsertionUtilities {
 
 				// safety check
 				while (changedPagesInDenseIndex.contains(-1)) {
-					changedPagesInDenseIndex.remove(-1);
+					changedPagesInDenseIndex.remove(new Integer(-1));
 				}
 
+				addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value);
 				return changedPagesInDenseIndex;
 			}
 		}
@@ -381,6 +395,7 @@ public class InsertionUtilities {
 
 		int pageNumber = 1;
 		int targetLocation = 0;
+
 		Loop: while (true) {
 			Page currentPage = null;
 			try {
@@ -397,6 +412,7 @@ public class InsertionUtilities {
 					targetLocation = i;
 					break Loop;
 				}
+
 				// if page entry is bigger in value
 				if (compareIndexElements(rows[i], newEntry) == -1) {
 					targetLocation = i;
@@ -556,6 +572,8 @@ public class InsertionUtilities {
 		Hashtable<String, Object>[] rows = indexPage.getRows();
 
 		for (int i = 0; i < rows.length; i++) {
+			if (rows[i] == null)
+				return i;
 			if (compareIndexElements(rows[i], searchValue) == 0) {
 				return i;
 			}
@@ -578,10 +596,10 @@ public class InsertionUtilities {
 			for (int i = 0; i < 3; i++) {
 				// other entry is less than the page entry
 				if (((Comparable) otherEntry.get(hashtableKeys[i]))
-						.compareTo((Comparable) pageEntry.get(hashtableKeys[i])) == -1) {
+						.compareTo((Comparable) pageEntry.get(hashtableKeys[i])) < 0) {
 					return -1;
-				} else if (((Comparable) pageEntry.get(hashtableKeys[i]))
-						.compareTo((Comparable) otherEntry.get(hashtableKeys[i])) == 0) {
+				} else if (((Comparable) otherEntry.get(hashtableKeys[i]))
+						.compareTo((Comparable) pageEntry.get(hashtableKeys[i])) == 0) {
 					continue;
 				} else
 					return 1;

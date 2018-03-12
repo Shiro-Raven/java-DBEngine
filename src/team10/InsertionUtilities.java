@@ -300,7 +300,7 @@ public class InsertionUtilities {
 		// point to the value after the insertion
 		relationRowNumber++;
 
-		while (true) {
+		whileLoop: while (true) {
 			try {
 				// load relation page
 				Page currentPage = PageManager
@@ -356,11 +356,25 @@ public class InsertionUtilities {
 					newIndexEntry.put("value", relationRows[i].get(columnName));
 					System.out.println(previousIndexEntry);
 					System.out.println(newIndexEntry);
-					int editedIndexPage = findAndReplaceInDenseIndex(tableName, columnName, previousIndexEntry,
-							newIndexEntry);
 
-					if (!changedPagesInDenseIndex.contains(editedIndexPage)) {
-						changedPagesInDenseIndex.add(editedIndexPage);
+					if (checkForRelationConsecutiveDuplicates(currentPage, i, tableName, columnName)) {
+						int[] resumeUpdateDenseIndexAt = new int[2];
+						try {
+							resumeUpdateDenseIndexAt = updateConsecutiveDuplicatesInDenseIndex(previousIndexEntry,
+									tableName, columnName);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						relationPageNumber = resumeUpdateDenseIndexAt[0];
+						relationRowNumber = resumeUpdateDenseIndexAt[1];
+						continue whileLoop;
+					} else {
+						int editedIndexPage = findAndReplaceInDenseIndex(tableName, columnName, previousIndexEntry,
+								newIndexEntry);
+
+						if (!changedPagesInDenseIndex.contains(editedIndexPage)) {
+							changedPagesInDenseIndex.add(editedIndexPage);
+						}
 					}
 
 				}
@@ -612,8 +626,8 @@ public class InsertionUtilities {
 	// other
 	// This will produce a conflict in the findAndReplaceMethod
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected static boolean checkForRelationConsecutiveDuplicates(Page currentPage, int currentRow, String columnName,
-			String tableName) {
+	protected static boolean checkForRelationConsecutiveDuplicates(Page currentPage, int currentRow, String tableName,
+			String columnName) {
 
 		Hashtable<String, Object>[] currentPageRows = currentPage.getRows();
 
@@ -633,25 +647,167 @@ public class InsertionUtilities {
 				nextPage = PageManager
 						.deserializePage("data/" + tableName + "/page_" + (currentPage.getPageNumber() + 1) + ".ser");
 			} catch (ClassNotFoundException | IOException e) {
-				e.printStackTrace();
+				return false;
 			}
 
 			// get the next value from the first row
+			if (nextPage.getRows()[0] == null)
+				return false;
 			nextRowValue = (Comparable) nextPage.getRows()[0].get(columnName);
 		}
 
 		// we are not in the last row of the page
 		else {
 			// get the next value
+			if (currentPageRows[currentRow + 1] == null)
+				return false;
 			nextRowValue = (Comparable) currentPageRows[currentRow + 1].get(columnName);
 		}
 
 		// check if nextRowValue is null
 		if (nextRowValue == null)
 			return false;
-		else
+		else {
 			return currentRowValue.compareTo(nextRowValue) == 0;
+		}
 	}
-	
-	
+
+	// returns the page number and row number where the normal update method
+	// should continue its work
+	protected static int[] updateConsecutiveDuplicatesInDenseIndex(Hashtable<String, Object> previousEntry,
+			String tableName, String columnName) throws IOException {
+		// the previous entry contains the value of the duplicate and its first
+		// old occurrence
+
+		// retrieve duplicated value
+		int pageOfFirstOccurrence = findAndReplaceInDenseIndex(tableName, columnName, previousEntry, previousEntry);
+
+		// Initializations:
+		// load the page of the first occurrence
+		Page currentIndexPage = null;
+
+		try {
+			currentIndexPage = PageManager.deserializePage("data/" + tableName + "/" + columnName + "/indices/Dense/"
+					+ "page_" + pageOfFirstOccurrence + ".ser");
+		} catch (ClassNotFoundException | IOException e) {
+			e.printStackTrace();
+		}
+
+		// find the exact row
+		int currentRow = InsertionUtilities.denseIndexLinearSearch(currentIndexPage, previousEntry);
+
+		Page nextEntryPage = null;
+		int nextEntryRow;
+
+		// do the replacements
+		while (true) {
+
+			// end of page
+			if (currentRow == currentIndexPage.getRows().length || currentIndexPage.getRows()[currentRow] == null) {
+				try {
+					// serialize the page
+					PageManager.serializePage(currentIndexPage, "data/" + tableName + "/" + columnName
+							+ "/indices/Dense/" + "page_" + currentIndexPage.getPageNumber() + ".ser");
+
+					// load the next page
+					currentIndexPage = PageManager.deserializePage("data/" + tableName + "/" + columnName
+							+ "/indices/Dense/" + "page_" + (currentIndexPage.getPageNumber() + 1) + ".ser");
+					currentRow = 0;
+				} catch (ClassNotFoundException | IOException e) {
+					// no more pages
+					break;
+				}
+			}
+
+			// determine next entry location
+			if (currentRow == currentIndexPage.getRows().length - 1) {
+				try {
+					nextEntryPage = PageManager.deserializePage("data/" + tableName + "/" + columnName
+							+ "/indices/Dense/" + "page_" + (currentIndexPage.getPageNumber() + 1) + ".ser");
+					nextEntryRow = 0;
+				} catch (ClassNotFoundException | IOException e) {
+					// no more pages
+					break;
+				}
+			} else {
+				nextEntryRow = currentRow + 1;
+				nextEntryPage = currentIndexPage;
+			}
+
+			// check if the next value is a consecutive duplicate
+			if (isConsecutiveDuplicate(currentIndexPage.getRows()[currentRow], nextEntryPage.getRows()[nextEntryRow])) {
+				if ((int) currentIndexPage.getRows()[currentRow].get("locInPage") == PageManager
+						.getMaximumRowsCountinPage() - 1) {
+					currentIndexPage.getRows()[currentRow].put("locInPage", 0);
+					currentIndexPage.getRows()[currentRow].put("pageNumber",
+							(int) currentIndexPage.getRows()[currentRow].get("pageNumber") + 1);
+				} else {
+					currentIndexPage.getRows()[currentRow].put("locInPage",
+							(int) currentIndexPage.getRows()[currentRow].get("locInPage") + 1);
+				}
+			} else {
+				break;
+			}
+
+			// increment the row counter
+			currentRow++;
+
+		}
+
+		// update the last duplicate value
+
+		if ((int) currentIndexPage.getRows()[currentRow].get("locInPage") == PageManager.getMaximumRowsCountinPage()
+				- 1) {
+			currentIndexPage.getRows()[currentRow].put("locInPage", 0);
+			currentIndexPage.getRows()[currentRow].put("pageNumber",
+					(int) currentIndexPage.getRows()[currentRow].get("pageNumber") + 1);
+		} else {
+			currentIndexPage.getRows()[currentRow].put("locInPage",
+					(int) currentIndexPage.getRows()[currentRow].get("locInPage") + 1);
+		}
+
+		// serialize the page
+		PageManager.serializePage(currentIndexPage, "data/" + tableName + "/" + columnName + "/indices/Dense/" + "page_"
+				+ currentIndexPage.getPageNumber() + ".ser");
+
+		// return the location of where to resume from
+		return resumeDenseIndexUpdateAt((int) currentIndexPage.getRows()[currentRow].get("pageNumber"),
+				(int) currentIndexPage.getRows()[currentRow].get("locInPage"));
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected static boolean isConsecutiveDuplicate(Hashtable<String, Object> currentEntry,
+			Hashtable<String, Object> nextEntry) throws IOException {
+
+		if (nextEntry == null || currentEntry == null) {
+			return false;
+		}
+
+		int currentEntryLocInPage = (int) currentEntry.get("locInPage");
+		int currentEntryPageNumber = (int) currentEntry.get("pageNumber");
+		Comparable currentEntryValue = (Comparable) currentEntry.get("value");
+
+		int nextEntryLocInPage = (int) nextEntry.get("locInPage");
+		int nextEntryPageNumber = (int) nextEntry.get("pageNumber");
+		Comparable nextEntryValue = (Comparable) nextEntry.get("value");
+
+		if (currentEntryValue.compareTo(nextEntryValue) != 0)
+			return false;
+		else {
+			if (currentEntryLocInPage == PageManager.getMaximumRowsCountinPage() - 1) {
+				return nextEntryPageNumber == currentEntryPageNumber + 1 && nextEntryLocInPage == 0;
+			} else {
+				return nextEntryPageNumber == currentEntryPageNumber && nextEntryLocInPage == currentEntryLocInPage + 1;
+			}
+		}
+	}
+
+	protected static int[] resumeDenseIndexUpdateAt(int pageNumber, int rowNumber) throws IOException {
+		if (rowNumber == PageManager.getMaximumRowsCountinPage() - 1) {
+			return new int[] { pageNumber + 1, 0 };
+		} else {
+			return new int[] { pageNumber, rowNumber + 1 };
+		}
+	}
+
 }

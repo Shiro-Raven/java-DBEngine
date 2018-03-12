@@ -99,7 +99,7 @@ public class DBApp {
 		// for some reason, Maq's insertTuple modifies the positionToInsertAt.
 		// Therefore, this local array is needed
 		int[] tempPositionToInsertAt = { positionToInsertAt[0], positionToInsertAt[1] };
-		
+
 		try {
 			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue);
 		} catch (IOException e) {
@@ -107,8 +107,10 @@ public class DBApp {
 		}
 
 		for (int i = 0; i < indexed_columns.size(); i++) {
-			InsertionUtilities.updateDenseIndexAfterInsertion(strTableName, indexed_columns.get(i),
-					tempPositionToInsertAt[0], tempPositionToInsertAt[1], htblColNameValue.get(indexed_columns.get(i)));
+			if (!indexed_columns.get(i).equals(primary_key))
+				InsertionUtilities.updateDenseIndexAfterInsertion(strTableName, indexed_columns.get(i),
+						tempPositionToInsertAt[0], tempPositionToInsertAt[1],
+						htblColNameValue.get(indexed_columns.get(i)));
 		}
 		System.out.println("Tuple Inserted!");
 	}

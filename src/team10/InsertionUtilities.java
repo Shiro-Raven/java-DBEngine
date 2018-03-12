@@ -300,7 +300,6 @@ public class InsertionUtilities {
 		// point to the value after the insertion
 		relationRowNumber++;
 
-		
 		while (true) {
 			try {
 				// load relation page
@@ -608,4 +607,51 @@ public class InsertionUtilities {
 		System.out.println("Inside compareIndexElements. Shouldn't be here");
 		return 0;
 	}
+
+	// checks if duplicates in the original relation occur right after each
+	// other
+	// This will produce a conflict in the findAndReplaceMethod
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected static boolean checkForRelationConsecutiveDuplicates(Page currentPage, int currentRow, String columnName,
+			String tableName) {
+
+		Hashtable<String, Object>[] currentPageRows = currentPage.getRows();
+
+		// get the value in the current row
+		Comparable currentRowValue = (Comparable) currentPageRows[currentRow].get(columnName);
+
+		// find the next row value
+		Comparable nextRowValue;
+
+		// we are in the last row of the page
+		if (currentRow == currentPageRows.length - 1) {
+
+			Page nextPage = null;
+
+			// load the next page
+			try {
+				nextPage = PageManager
+						.deserializePage("data/" + tableName + "/page_" + (currentPage.getPageNumber() + 1) + ".ser");
+			} catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+			}
+
+			// get the next value from the first row
+			nextRowValue = (Comparable) nextPage.getRows()[0].get(columnName);
+		}
+
+		// we are not in the last row of the page
+		else {
+			// get the next value
+			nextRowValue = (Comparable) currentPageRows[currentRow + 1].get(columnName);
+		}
+
+		// check if nextRowValue is null
+		if (nextRowValue == null)
+			return false;
+		else
+			return currentRowValue.compareTo(nextRowValue) == 0;
+	}
+	
+	
 }

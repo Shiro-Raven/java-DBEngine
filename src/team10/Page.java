@@ -54,4 +54,20 @@ public class Page implements Serializable {
 		return pageNumber;
 	}
 
+	public String toString() {
+		
+		String output = "";
+		
+		for (int i = 0; i < this.getMaxRows(); i++) {
+			if (this.getRows()[i] == null) {
+				break;
+			} else {
+				output += this.getRows()[i].toString();
+			}
+		}
+		
+		return output;
+		
+	}
+	
 }

@@ -109,18 +109,29 @@ public class DBApp {
 		ArrayList<Integer> changedPagesAfterDenseIndexUpdate = new ArrayList<Integer>();
 
 		for (int i = 0; i < indexedColumns.size(); i++) {
-			if (!indexedColumns.get(i).equals(primaryKey))
+			if (!indexedColumns.get(i).equals(primaryKey)) {
 				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
 						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 						htblColNameValue.get(indexedColumns.get(i)));
-			try {
-				IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i), changedPagesAfterDenseIndexUpdate);
-			}catch(Exception e) {
-				e.printStackTrace();
+				try {
+					IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i),
+							changedPagesAfterDenseIndexUpdate);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}else {
+				try {
+					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey,positionToInsertAt[0]);
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
-			
+
 		}
-		
 
 		/** TODO update the BRIN index after insertion **/
 

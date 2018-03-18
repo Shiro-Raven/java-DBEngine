@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Hashtable;
 
 public class IndexUtilities {
@@ -74,7 +75,6 @@ public class IndexUtilities {
 	protected static void updateBRINIndex(String tableName, String columnName,
 			ArrayList<Integer> changedDenseIndexPages) throws DBAppException, IOException {
 
-
 		for (int i = 0; i < changedDenseIndexPages.size(); i++) {
 
 			// get the target dense index page to update the BRIN
@@ -84,16 +84,46 @@ public class IndexUtilities {
 			Page currentDenseIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/Dense",
 					currentDensePageLoc);
 			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInDenseIndexPage(currentDenseIndexPage);
-			
-			
-			
+			Page BRINIndexPage = null;
+			try {
+				BRINIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/BRIN",
+						currentBRINPageLoc);
+			} catch (DBAppException e) {
+				if (e.toString().equals("The page file does not exist")) {
+					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
+
+				}
+			}
+			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
 		}
+	}
+
+	protected static Page retrievePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
+		File pageDirectory = new File(pageDirectoryPath);
+		if (!pageDirectory.exists()) {
+			throw new DBAppException("The file path supplied does not exist");
+		}
+		if (!pageDirectory.isDirectory()) {
+			throw new DBAppException("The file path supplied to retrieve the page is not a directory");
+		}
+		File pageFile = new File(pageDirectoryPath + "/page_" + pageNumber + ".ser");
+		if (!pageFile.exists()) {
+			throw new DBAppException("The page file does not exist");
+		}
+		try {
+			return PageManager.deserializePage(pageFile.getPath());
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected static Object[] retrieveMinAndMaxInDenseIndexPage(Page denseIndexPage) {
 		Hashtable<String, Object>[] pageRows = denseIndexPage.getRows();
-
 		Comparable minValueInPage = (Comparable) pageRows[0].get("value");
 		Comparable maxValueInPage = (Comparable) pageRows[0].get("value");
 		for (int i = 0; i < pageRows.length; i++) {
@@ -109,6 +139,17 @@ public class IndexUtilities {
 		return minAndMaxValues;
 
 	}
+
+	protected static Comparator<Hashtable<String, Object>> getBRINIndexComparator() {
+		return new Comparator<Hashtable<String, Object>>() {
+			public int compare(Hashtable<String, Object> record1, Hashtable<String, Object> record2) {
+				int record1PageNumber = (int) (record1.get("pageNumber"));
+				int record2PageNumber = (int) (record2.get("pageNumber"));
+				return record1PageNumber < record2PageNumber ? -1 : record1PageNumber > record2PageNumber ? 1 : 0;
+			}
+		};
+	}
+	
 
 	protected static void EraseNonExistentDenseIndexPages(String tableName, String columnName,
 			ArrayList<Integer> changedDenseIndexPages) {
@@ -135,28 +176,6 @@ public class IndexUtilities {
 	// Get a page based on the containing directory path
 	// Throws a DBAppException in case the file path does not point to a directory
 	// Throws a DBAppException in case the page does not exist
-	protected static Page retrievePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
-		File pageDirectory = new File(pageDirectoryPath);
-		if (!pageDirectory.exists()) {
-			throw new DBAppException("The file path supplied does not exist");
-		}
-		if (!pageDirectory.isDirectory()) {
-			throw new DBAppException("The file path supplied to retrieve the page is not a directory");
-		}
-		File pageFile = new File(pageDirectoryPath + "page_" + pageNumber + ".ser");
-		if (!pageFile.exists()) {
-			throw new DBAppException("The page file does not exist");
-		}
-		try {
-			return PageManager.deserializePage(pageFile.getPath());
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-
-	}
 
 	// Retrieve all pages in a given path
 	protected static ArrayList<Page> retrieveAllPages(String filepath) throws IOException, ClassNotFoundException {

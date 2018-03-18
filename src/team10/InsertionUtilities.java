@@ -349,6 +349,7 @@ public class InsertionUtilities {
 					previousIndexEntry.put("pageNumber", previousPageNumber);
 					previousIndexEntry.put("locInPage", previousRowNumber);
 					previousIndexEntry.put("value", relationRows[i].get(columnName));
+					previousIndexEntry.put("isDeleted", relationRows[i].get("isDeleted"));
 
 					// new entry
 					Hashtable<String, Object> newIndexEntry = new Hashtable<>();

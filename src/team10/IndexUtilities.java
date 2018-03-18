@@ -78,7 +78,7 @@ public class IndexUtilities {
 			throws ClassNotFoundException, IOException, DBAppException {
 		File currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
 		while (currentTablePageFile.exists()) {
-			int currentBRINPageLoc = changedPageNumber / (PageManager.getBRINSize() - 1);
+			int currentBRINPageLoc = ((changedPageNumber - 1) / PageManager.getBRINSize()) + 1;
 			Page currentTablePage = PageManager.deserializePage(currentTablePageFile.getPath());
 			Object[] minAndMaxInCurrentTablePage = retrieveMinAndMaxInPage(currentTablePage, false, columnName);
 			Page BRINIndexPage = null;
@@ -90,11 +90,17 @@ public class IndexUtilities {
 				// if it does not exists create a new page
 				if (e.toString().equals("The page file does not exist")) {
 					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
-					
 				}
 			}
-			
-
+			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
+			int locOfTablePageRecordInBRIN = retrieveLocOfPageRecordInBRIN(BRINRecords, changedPageNumber);
+			if (locOfTablePageRecordInBRIN > 0) {
+				updateBRINRecord(columnName, BRINRecords[locOfTablePageRecordInBRIN], minAndMaxInCurrentTablePage);
+				updateDeletedFlagOnBRINRecord(BRINRecords[locOfTablePageRecordInBRIN], currentTablePage);
+			} else {
+				int locOfNewRecordInBRIN = addNewBRINRecord(columnName, BRINIndexPage, minAndMaxInCurrentTablePage);
+				updateDeletedFlagOnBRINRecord(BRINRecords[locOfNewRecordInBRIN], currentTablePage);
+			}
 			changedPageNumber++;
 			currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
 		}
@@ -129,7 +135,7 @@ public class IndexUtilities {
 				}
 			}
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
-			int locOfDenseRecordInBRIN = retrieveLocOfDenseRecordInBRIN(BRINRecords, currentDensePageLoc + 1);
+			int locOfDenseRecordInBRIN = retrieveLocOfPageRecordInBRIN(BRINRecords, currentDensePageLoc + 1);
 			if (locOfDenseRecordInBRIN > 0) {
 				updateBRINRecord(columnName, BRINRecords[locOfDenseRecordInBRIN], minAndMaxInCurrentPage);
 				updateDeletedFlagOnBRINRecord(BRINRecords[locOfDenseRecordInBRIN], currentDenseIndexPage);
@@ -246,11 +252,11 @@ public class IndexUtilities {
 		};
 	}
 
-	protected static int retrieveLocOfDenseRecordInBRIN(Hashtable<String, Object>[] BRINRecords, int DensePageLoc) {
+	protected static int retrieveLocOfPageRecordInBRIN(Hashtable<String, Object>[] BRINRecords, int pageLoc) {
 
 		for (int i = 0; i < BRINRecords.length; i++) {
 			Hashtable<String, Object> currentRecord = BRINRecords[i];
-			if (((int) currentRecord.get("pageNumber")) == DensePageLoc) {
+			if (((int) currentRecord.get("pageNumber")) == pageLoc) {
 				return i;
 			}
 		}

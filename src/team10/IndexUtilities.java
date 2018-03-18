@@ -75,12 +75,28 @@ public class IndexUtilities {
 	}
 
 	protected static void updateBRINIndexOnPK(String tableName, String columnName, int changedPageNumber)
-			throws ClassNotFoundException, IOException {
+			throws ClassNotFoundException, IOException, DBAppException {
 		File currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
 		while (currentTablePageFile.exists()) {
+			int currentBRINPageLoc = changedPageNumber / (PageManager.getBRINSize() - 1);
 			Page currentTablePage = PageManager.deserializePage(currentTablePageFile.getPath());
 			Object[] minAndMaxInCurrentTablePage = retrieveMinAndMaxInPage(currentTablePage, false, columnName);
+			Page BRINIndexPage = null;
+			try {
+				// in case the BRIN index page exists retrieve it
+				BRINIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/BRIN",
+						currentBRINPageLoc);
+			} catch (DBAppException e) {
+				// if it does not exists create a new page
+				if (e.toString().equals("The page file does not exist")) {
+					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
+					
+				}
+			}
 			
+
+			changedPageNumber++;
+			currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
 		}
 	}
 
@@ -99,7 +115,7 @@ public class IndexUtilities {
 
 			Page currentDenseIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/Dense",
 					currentDensePageLoc);
-			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInPage(currentDenseIndexPage,true,columnName);
+			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInPage(currentDenseIndexPage, true, columnName);
 			Page BRINIndexPage = null;
 			try {
 				// in case the BRIN index page exists retrieve it
@@ -113,7 +129,7 @@ public class IndexUtilities {
 				}
 			}
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
-			int locOfDenseRecordInBRIN = retrieveLocOfDenseRecordInBRIN(BRINRecords, currentDensePageLoc);
+			int locOfDenseRecordInBRIN = retrieveLocOfDenseRecordInBRIN(BRINRecords, currentDensePageLoc + 1);
 			if (locOfDenseRecordInBRIN > 0) {
 				updateBRINRecord(columnName, BRINRecords[locOfDenseRecordInBRIN], minAndMaxInCurrentPage);
 				updateDeletedFlagOnBRINRecord(BRINRecords[locOfDenseRecordInBRIN], currentDenseIndexPage);
@@ -188,27 +204,27 @@ public class IndexUtilities {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected static Object[] retrieveMinAndMaxInPage(Page targetPage,boolean isIndex, String columnName) {
+	protected static Object[] retrieveMinAndMaxInPage(Page targetPage, boolean isIndex, String columnName) {
 		Hashtable<String, Object>[] pageRows = targetPage.getRows();
 		Comparable minValueInPage = null;
 		Comparable maxValueInPage = null;
-		if(isIndex) {
-					minValueInPage = (Comparable) pageRows[0].get("value");
-					maxValueInPage = (Comparable) pageRows[0].get("value");
-					
-		}else {
+		if (isIndex) {
+			minValueInPage = (Comparable) pageRows[0].get("value");
+			maxValueInPage = (Comparable) pageRows[0].get("value");
+
+		} else {
 			minValueInPage = (Comparable) pageRows[0].get(columnName);
 			maxValueInPage = (Comparable) pageRows[0].get(columnName);
 		}
 		for (int i = 0; i < pageRows.length; i++) {
 			Hashtable<String, Object> currentRecord = pageRows[i];
 			Comparable currentValue = null;
-			if(isIndex) {
-				currentValue =(Comparable) currentRecord.get("value");
-			}else {
+			if (isIndex) {
+				currentValue = (Comparable) currentRecord.get("value");
+			} else {
 				currentValue = (Comparable) currentRecord.get(columnName);
 			}
-			
+
 			if (currentValue.compareTo(minValueInPage) < 0) {
 				minValueInPage = currentValue;
 			} else if (currentValue.compareTo(maxValueInPage) > 0) {

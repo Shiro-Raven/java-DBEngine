@@ -99,8 +99,7 @@ public class IndexUtilities {
 
 		for (File file : files.listFiles()) {
 
-			String name = file.getName();
-			if (name.startsWith("dense_") && name.endsWith(".ser"))
+			if (file.getName().startsWith("dense_") && file.getName().endsWith(".ser"))
 				pages.add(PageManager.deserializePage(file.getPath()));
 
 		}

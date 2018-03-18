@@ -74,9 +74,18 @@ public class IndexUtilities {
 
 	}
 
-	protected static void updateBRINIndex(String tableName, String columnName,
-			ArrayList<Integer> changedDenseIndexPages) throws DBAppException, IOException {
+	protected static void updateBRINIndexOnPK(String tableName, String columnName, int changedPageNumber)
+			throws ClassNotFoundException, IOException {
+		File currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
+		while (currentTablePageFile.exists()) {
+			Page currentTablePage = PageManager.deserializePage(currentTablePageFile.getPath());
+			Object[] minAndMaxInCurrentTablePage = retrieveMinAndMaxInPage(currentTablePage, false, columnName);
+			
+		}
+	}
 
+	protected static void updateBRINIndexOnDense(String tableName, String columnName,
+			ArrayList<Integer> changedDenseIndexPages) throws DBAppException, IOException {
 		for (int i = 0; i < changedDenseIndexPages.size(); i++) {
 
 			// get the target dense index page to update the BRIN
@@ -90,7 +99,7 @@ public class IndexUtilities {
 
 			Page currentDenseIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/Dense",
 					currentDensePageLoc);
-			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInDenseIndexPage(currentDenseIndexPage);
+			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInPage(currentDenseIndexPage,true,columnName);
 			Page BRINIndexPage = null;
 			try {
 				// in case the BRIN index page exists retrieve it
@@ -179,13 +188,27 @@ public class IndexUtilities {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected static Object[] retrieveMinAndMaxInDenseIndexPage(Page denseIndexPage) {
-		Hashtable<String, Object>[] pageRows = denseIndexPage.getRows();
-		Comparable minValueInPage = (Comparable) pageRows[0].get("value");
-		Comparable maxValueInPage = (Comparable) pageRows[0].get("value");
+	protected static Object[] retrieveMinAndMaxInPage(Page targetPage,boolean isIndex, String columnName) {
+		Hashtable<String, Object>[] pageRows = targetPage.getRows();
+		Comparable minValueInPage = null;
+		Comparable maxValueInPage = null;
+		if(isIndex) {
+					minValueInPage = (Comparable) pageRows[0].get("value");
+					maxValueInPage = (Comparable) pageRows[0].get("value");
+					
+		}else {
+			minValueInPage = (Comparable) pageRows[0].get(columnName);
+			maxValueInPage = (Comparable) pageRows[0].get(columnName);
+		}
 		for (int i = 0; i < pageRows.length; i++) {
 			Hashtable<String, Object> currentRecord = pageRows[i];
-			Comparable currentValue = (Comparable) currentRecord.get("value");
+			Comparable currentValue = null;
+			if(isIndex) {
+				currentValue =(Comparable) currentRecord.get("value");
+			}else {
+				currentValue = (Comparable) currentRecord.get(columnName);
+			}
+			
 			if (currentValue.compareTo(minValueInPage) < 0) {
 				minValueInPage = currentValue;
 			} else if (currentValue.compareTo(maxValueInPage) > 0) {

@@ -51,8 +51,8 @@ public class DBApp {
 		}
 
 		ArrayList<String[]> data = new ArrayList<>();
-		String primary_key = null;
-		ArrayList<String> indexed_columns = new ArrayList<>();
+		String primaryKey = null;
+		ArrayList<String> indexedColumns = new ArrayList<>();
 		Hashtable<String, String> ColNameType = new Hashtable<>();
 
 		while (line != null) {
@@ -62,9 +62,9 @@ public class DBApp {
 				data.add(content);
 				ColNameType.put(content[1], content[2]);
 				if ((content[3].toLowerCase()).equals("true"))
-					primary_key = content[1];
+					primaryKey = content[1];
 				if (content[4].toLowerCase().equals("true"))
-					indexed_columns.add(content[1]);
+					indexedColumns.add(content[1]);
 			}
 			try {
 				line = br.readLine();
@@ -82,7 +82,7 @@ public class DBApp {
 		if (data.isEmpty())
 			throw new DBAppException("404 Table Not Found !");
 
-		if (htblColNameValue.get(primary_key).equals(null))
+		if (htblColNameValue.get(primaryKey).equals(null))
 			throw new DBAppException("Primary Key Can NOT be null");
 
 		if (!InsertionUtilities.isValidTuple(ColNameType, htblColNameValue))
@@ -90,11 +90,11 @@ public class DBApp {
 					"The tuple you're trying to insert into table " + strTableName + " is not a valid tuple!");
 
 		int[] positionToInsertAt;
-		if (indexed_columns.contains(primary_key)) {
-			positionToInsertAt = InsertionUtilities.searchForInsertionPositionIndexed(strTableName, primary_key,
+		if (indexedColumns.contains(primaryKey)) {
+			positionToInsertAt = InsertionUtilities.searchForInsertionPositionIndexed(strTableName, primaryKey,
 					htblColNameValue);
 		} else {
-			positionToInsertAt = InsertionUtilities.searchForInsertionPosition(strTableName, primary_key,
+			positionToInsertAt = InsertionUtilities.searchForInsertionPosition(strTableName, primaryKey,
 					htblColNameValue);
 		}
 		// for some reason, Maq's insertTuple modifies the positionToInsertAt.
@@ -107,13 +107,21 @@ public class DBApp {
 			e.printStackTrace();
 		}
 
-		for (int i = 0; i < indexed_columns.size(); i++) {
-			if (!indexed_columns.get(i).equals(primary_key))
-				InsertionUtilities.updateDenseIndexAfterInsertion(strTableName, indexed_columns.get(i),
-						tempPositionToInsertAt[0], tempPositionToInsertAt[1],
-						htblColNameValue.get(indexed_columns.get(i)));
+		ArrayList<Integer> changedPagesAfterDenseIndexUpdate = new ArrayList<Integer>();
+
+		for (int i = 0; i < indexedColumns.size(); i++) {
+			if (!indexedColumns.get(i).equals(primaryKey))
+				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
+						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
+						htblColNameValue.get(indexedColumns.get(i)));
 		}
+
+		/** TODO update the BRIN index after insertion **/
+
 		System.out.println("Tuple Inserted!");
+		System.out.println(
+				"Changed Dense Index Page Numbers at the end: " + changedPagesAfterDenseIndexUpdate.toString());
+
 	}
 
 	@SuppressWarnings("unchecked")

@@ -31,18 +31,18 @@ public class Tests {
 //		}
 
 //		 Hashtable<String, Object> row = new Hashtable<>();
-//		 row.put("id", 2);
-//		 row.put("first_name", "a");
+//		 row.put("id", 21);
+//		 row.put("first_name", "dd");
 //		 DBApp app = new DBApp();
 //		 app.insertIntoTable("idTest", row);
 
 		System.out.println("Table:");
-		for (int i = 1; i <= 3; i++) {
+		for (int i = 1; i <= 4; i++) {
 			Page page = PageManager.deserializePage("data/idTest/page_" + i + ".ser");
 			PageManager.printPageContents(page);
 		}
 		System.out.println("Dense Index on First Name:");
-		for (int i = 1; i <= 3; i++) {
+		for (int i = 1; i <= 4; i++) {
 			Page page = PageManager.deserializePage("data/idTest/first_name/Indices/Dense/page_" + i + ".ser");
 			PageManager.printPageContents(page);
 		}

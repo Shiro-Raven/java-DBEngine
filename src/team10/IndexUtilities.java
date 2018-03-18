@@ -140,8 +140,8 @@ public class IndexUtilities {
 	}
 
 	// revise if errors occur
-	protected static int addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber, String columnName,
-			String tableName, Object newValue) {
+	protected static ArrayList<Integer> addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber,
+			String columnName, String tableName, Object newValue) throws DBAppException {
 
 		Hashtable<String, Object> newEntry = new Hashtable<>();
 		newEntry.put("value", newValue);
@@ -177,17 +177,23 @@ public class IndexUtilities {
 			pageNumber++;
 		}
 		try {
-			insertIntoDenseIndex(tableName, columnName, pageNumber, targetLocation, newEntry);
-			return pageNumber;
+			int lastChangedPage = insertIntoDenseIndex(tableName, columnName, pageNumber, targetLocation, newEntry);
+			ArrayList<Integer> changedPages = new ArrayList<Integer>();
+
+			for (int j = pageNumber; j <= lastChangedPage; j++)
+				changedPages.add(j);
+
+			return changedPages;
+
 		} catch (IOException e) {
 			// some error occurred
 			e.printStackTrace();
-			return -1;
+			throw new DBAppException();
 		}
 
 	}
 
-	protected static boolean insertIntoDenseIndex(String tableName, String columnName, int pageNumber, int rowNumber,
+	protected static int insertIntoDenseIndex(String tableName, String columnName, int pageNumber, int rowNumber,
 			Hashtable<String, Object> htblColNameValue) throws IOException {
 		Page page = loadDenseIndexPage(tableName, columnName, pageNumber);
 		int maxRows = PageManager.getMaximumRowsCountinPage();
@@ -215,7 +221,7 @@ public class IndexUtilities {
 
 		PageManager.serializePage(page,
 				"data/" + tableName + "/" + columnName + "/indices/Dense/" + "page_" + page.getPageNumber() + ".ser");
-		return true;
+		return page.getPageNumber();
 	}
 
 	// warning: should not be used to load pages in a loop; the loop will become

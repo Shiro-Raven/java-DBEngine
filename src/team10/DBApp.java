@@ -106,16 +106,21 @@ public class DBApp {
 			e.printStackTrace();
 		}
 
+		ArrayList<Integer> changedPagesAfterDenseIndexUpdate = new ArrayList<Integer>();
+
 		for (int i = 0; i < indexedColumns.size(); i++) {
 			if (!indexedColumns.get(i).equals(primaryKey))
-				InsertionUtilities.updateDenseIndexAfterInsertion(strTableName, indexedColumns.get(i),
-						tempPositionToInsertAt[0], tempPositionToInsertAt[1],
+				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
+						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 						htblColNameValue.get(indexedColumns.get(i)));
 		}
-		
+
 		/** TODO update the BRIN index after insertion **/
-		
+
 		System.out.println("Tuple Inserted!");
+		System.out.println(
+				"Changed Dense Index Page Numbers at the end: " + changedPagesAfterDenseIndexUpdate.toString());
+
 	}
 
 	@SuppressWarnings("unchecked")

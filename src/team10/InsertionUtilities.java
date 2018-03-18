@@ -287,14 +287,12 @@ public class InsertionUtilities {
 		return -1;
 	}
 
+	//returns an array list of the pages in the dense index that were changed
 	protected static ArrayList<Integer> updateDenseIndexAfterInsertion(String tableName, String columnName,
-			int numberOfPageOfInsertion, int rowNumberOfInsertion, Object value) {
+			int numberOfPageOfInsertion, int rowNumberOfInsertion, Object value) throws DBAppException {
 
 		int relationPageNumber = numberOfPageOfInsertion;
 		int relationRowNumber = rowNumberOfInsertion;
-
-		// array list to use in updating the brin index
-		ArrayList<Integer> changedPagesInDenseIndex = new ArrayList<>();
 
 		// point to the value after the insertion
 		relationRowNumber++;
@@ -312,18 +310,10 @@ public class InsertionUtilities {
 
 					if (relationRows[i] == null) {
 						// add new value
-						int insertedNewValueAt = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
-								rowNumberOfInsertion, columnName, tableName, value);
+						ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(
+								numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value);
 
-						if (!changedPagesInDenseIndex.contains(insertedNewValueAt))
-							changedPagesInDenseIndex.add(insertedNewValueAt);
-
-						// safety check
-						while (changedPagesInDenseIndex.contains(-1)) {
-							changedPagesInDenseIndex.remove(new Integer(-1));
-						}
-
-						return changedPagesInDenseIndex;
+						return addNewValueChanges;
 					}
 
 					int previousRowNumber;
@@ -377,24 +367,13 @@ public class InsertionUtilities {
 							e.printStackTrace();
 						}
 
-						// add the changed pages to the array list
-						for (int counter = relationPageNumber; i <= resumeUpdateDenseIndexAt[0]; counter++) {
-							if (!changedPagesInDenseIndex.contains(counter)) {
-								changedPagesInDenseIndex.add(counter);
-							}
-						}
-
 						relationPageNumber = resumeUpdateDenseIndexAt[0];
 						relationRowNumber = resumeUpdateDenseIndexAt[1];
 						continue whileLoop;
 
 					} else {
-						int editedIndexPage = IndexUtilities.findAndReplaceInDenseIndex(tableName, columnName,
-								previousIndexEntry, newIndexEntry);
-
-						if (!changedPagesInDenseIndex.contains(editedIndexPage)) {
-							changedPagesInDenseIndex.add(editedIndexPage);
-						}
+						IndexUtilities.findAndReplaceInDenseIndex(tableName, columnName, previousIndexEntry,
+								newIndexEntry);
 					}
 
 				}
@@ -406,19 +385,11 @@ public class InsertionUtilities {
 			} catch (IOException | ClassNotFoundException e) {
 				// no more pages
 
-				// add the new value
-				int insertedNewValueAt = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
+				// add new value
+				ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
 						rowNumberOfInsertion, columnName, tableName, value);
 
-				if (!changedPagesInDenseIndex.contains(insertedNewValueAt))
-					changedPagesInDenseIndex.add(insertedNewValueAt);
-
-				// safety check
-				while (changedPagesInDenseIndex.contains(-1)) {
-					changedPagesInDenseIndex.remove(new Integer(-1));
-				}
-
-				return changedPagesInDenseIndex;
+				return addNewValueChanges;
 			}
 		}
 	}

@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
 
 public class IndexUtilities {
@@ -57,23 +58,84 @@ public class IndexUtilities {
 	}
 
 	// BRIN index business logic for now
-	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary) {
-		
+	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary)
+			throws DBAppException {
+		if (!isPrimary) {
+			makeIndexDirectory(strTableName, strColumnName, "Dense");
+		}
+		makeIndexDirectory(strTableName, strColumnName, "BRIN");
 	}
 
 	// Creates dense index of the given column in the given table
 	protected static void createDenseIndex(String strTableName, String strColumnName) {
-		
+
 	}
-	
-	protected static void updateBRINIndex(ArrayList <Object> denseIndexChangesInfo) {
-		
+
+	protected static void updateBRINIndex(String tableName, String columnName,
+			ArrayList<Integer> changedDenseIndexPages) throws DBAppException, IOException {
+
+
+		for (int i = 0; i < changedDenseIndexPages.size(); i++) {
+
+			// get the target dense index page to update the BRIN
+
+			int currentDensePageLoc = (int) (changedDenseIndexPages.get(i)) - 1;
+			int currentBRINPageLoc = (currentDensePageLoc / PageManager.getBRINSize()) + 1;
+			Page currentDenseIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/Dense",
+					currentDensePageLoc);
+			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInDenseIndexPage(currentDenseIndexPage);
+			
+			
+			
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected static Object[] retrieveMinAndMaxInDenseIndexPage(Page denseIndexPage) {
+		Hashtable<String, Object>[] pageRows = denseIndexPage.getRows();
+
+		Comparable minValueInPage = (Comparable) pageRows[0].get("value");
+		Comparable maxValueInPage = (Comparable) pageRows[0].get("value");
+		for (int i = 0; i < pageRows.length; i++) {
+			Hashtable<String, Object> currentRecord = pageRows[i];
+			Comparable currentValue = (Comparable) currentRecord.get("value");
+			if (currentValue.compareTo(minValueInPage) < 0) {
+				minValueInPage = currentValue;
+			} else if (currentValue.compareTo(maxValueInPage) > 0) {
+				maxValueInPage = currentValue;
+			}
+		}
+		Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
+		return minAndMaxValues;
+
+	}
+
+	protected static void EraseNonExistentDenseIndexPages(String tableName, String columnName,
+			ArrayList<Integer> changedDenseIndexPages) {
+		/*
+		 * the check is only on the maximum page numbers in case a max page number does
+		 * not exist, remove it from the arraylist then recheck exists the max page
+		 * exists again for robustness once the check for existence of page passes,
+		 * break the loop
+		 */
+		do {
+			int maxPageNumber = Collections.max(changedDenseIndexPages);
+			File maxPage = new File(
+					"data/" + tableName + "/" + columnName + "/indices/Dense/page_" + maxPageNumber + ".ser");
+			if (maxPage.exists()) {
+				break;
+			} else {
+				changedDenseIndexPages.remove(maxPageNumber);
+			}
+
+		} while (changedDenseIndexPages.isEmpty());
+
 	}
 
 	// Get a page based on the containing directory path
 	// Throws a DBAppException in case the file path does not point to a directory
 	// Throws a DBAppException in case the page does not exist
-	protected static Page retreivePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
+	protected static Page retrievePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
 		File pageDirectory = new File(pageDirectoryPath);
 		if (!pageDirectory.exists()) {
 			throw new DBAppException("The file path supplied does not exist");
@@ -97,7 +159,7 @@ public class IndexUtilities {
 	}
 
 	// Retrieve all pages in a given path
-	protected static ArrayList<Page> retreiveAllPages(String filepath) throws IOException, ClassNotFoundException {
+	protected static ArrayList<Page> retrieveAllPages(String filepath) throws IOException, ClassNotFoundException {
 
 		IndexUtilities.validateDirectory(filepath);
 		ArrayList<Page> pages = new ArrayList<Page>();
@@ -134,6 +196,26 @@ public class IndexUtilities {
 
 		} while (i < pathParams.length);
 
+	}
+
+	/*
+	 * make directories for the appropriate index type
+	 */
+	protected static void makeIndexDirectory(String tableName, String columnName, String indexType)
+			throws DBAppException {
+		if (indexType.equals("Dense")) {
+			File indexDir = new File("data/" + tableName + "/" + columnName + "/indices/" + "Dense");
+			if (!indexDir.exists()) {
+				indexDir.mkdirs();
+			}
+		} else if (indexType.equals("BRIN")) {
+			File indexDir = new File("data/" + tableName + "/" + columnName + "/indices/" + "BRIN");
+			if (!indexDir.exists()) {
+				indexDir.mkdirs();
+			}
+		} else {
+			throw new DBAppException("The only supported index types are dense and BRIN indices");
+		}
 	}
 
 	// revise if errors occur
@@ -389,8 +471,8 @@ public class IndexUtilities {
 				return false;
 			}
 
-			// get the next value from the first row
 			if (nextPage.getRows()[0] == null)
+				// get the next value from the first row
 				return false;
 			nextRowValue = (Comparable) nextPage.getRows()[0].get(columnName);
 		}

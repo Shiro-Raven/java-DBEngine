@@ -111,6 +111,7 @@ public class IndexUtilities {
 			} else {
 				addNewBRINRecord(columnName, BRINRecords, currentDensePageLoc, minAndMaxInCurrentPage);
 			}
+			PageManager.serializePage(BRINIndexPage, "data/"+tableName+"/"+columnName+"/indices/BRIN"+currentBRINPageLoc+".ser");
 
 		}
 

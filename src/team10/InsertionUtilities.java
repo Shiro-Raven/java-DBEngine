@@ -2,7 +2,6 @@ package team10;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Set;
@@ -354,8 +353,10 @@ public class InsertionUtilities {
 					newIndexEntry.put("pageNumber", currentPage.getPageNumber());
 					newIndexEntry.put("locInPage", i);
 					newIndexEntry.put("value", relationRows[i].get(columnName));
-					System.out.println(previousIndexEntry);
-					System.out.println(newIndexEntry);
+
+					// for debugging purposes
+					// System.out.println(previousIndexEntry);
+					// System.out.println(newIndexEntry);
 
 					if (IndexUtilities.checkForRelationConsecutiveDuplicates(currentPage, i, tableName, columnName)) {
 						int[] resumeUpdateDenseIndexAt = new int[2];
@@ -365,9 +366,18 @@ public class InsertionUtilities {
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
+
+						// add the changed pages to the array list
+						for (int counter = relationPageNumber; i <= resumeUpdateDenseIndexAt[0]; counter++) {
+							if (!changedPagesInDenseIndex.contains(counter)) {
+								changedPagesInDenseIndex.add(counter);
+							}
+						}
+
 						relationPageNumber = resumeUpdateDenseIndexAt[0];
 						relationRowNumber = resumeUpdateDenseIndexAt[1];
 						continue whileLoop;
+
 					} else {
 						int editedIndexPage = IndexUtilities.findAndReplaceInDenseIndex(tableName, columnName,
 								previousIndexEntry, newIndexEntry);

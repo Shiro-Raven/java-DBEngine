@@ -112,6 +112,9 @@ public class DBApp {
 						tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 						htblColNameValue.get(indexedColumns.get(i)));
 		}
+		
+		/** TODO update the BRIN index after insertion **/
+		
 		System.out.println("Tuple Inserted!");
 	}
 

@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.util.Properties;
 
 public class PageManager {
@@ -15,6 +16,11 @@ public class PageManager {
 		out.writeObject(page);
 		out.close();
 		fileOut.close();
+
+		// Testing Purposes // To Be Removed //
+		PrintWriter writer = new PrintWriter(filepath.substring(0, filepath.length() - 3) + "txt");
+		writer.print(page);
+		writer.close();
 	}
 
 	public static Page deserializePage(String filepath) throws IOException, ClassNotFoundException {

@@ -3,7 +3,6 @@ package team10;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Hashtable;
 
 public class Tests {
@@ -11,17 +10,16 @@ public class Tests {
 	public static void main(String[] args) throws DBAppException, Exception, IOException {
 		int[] id = { 5, 4, 1, 2, 3, 6, 7, 10, 9, 8, 54, 53, 244, 21, 56 };
 		// passed! problem: neighboring duplicates
-		 String[] firstName = { "ahmed","ahmed","hell","hell",
-		 "mohamed","zzz","lovelife","psychopass new movie","yes, darwish, rejoice",
-		 "reda is a computer fanatic... or is he?","i am evil","i am zen", "i am aku",
-		 "life is a waterfall",""};
+		String[] firstName = { "ahmed", "ahmed", "hell", "hell", "mohamed", "zzz", "lovelife", "psychopass new movie",
+				"yes, darwish, rejoice", "reda is a computer fanatic... or is he?", "i am evil", "i am zen", "i am aku",
+				"life is a waterfall", "" };
 
-		 //passed!
-//		 String[] firstName = { "ahmed","notAhmed","hell","nothell",
-//		 "mohamed","zzz","lovelife","psychopass new movie","yes Darwish rejoice",
-//		 "reda is a computer fanatic or is he?","i am evil","ahmed", "i am aku",
-//		 "life is a waterfall",""};
-		 
+		// passed!
+		// String[] firstName = { "ahmed","notAhmed","hell","nothell",
+		// "mohamed","zzz","lovelife","psychopass new movie","yes Darwish rejoice",
+		// "reda is a computer fanatic or is he?","i am evil","ahmed", "i am aku",
+		// "life is a waterfall",""};
+
 		for (int i = 0; i < id.length; i++) {
 			Hashtable<String, Object> row = new Hashtable<>();
 			row.put("id", id[i]);
@@ -30,11 +28,11 @@ public class Tests {
 			app.insertIntoTable("idTest", row);
 		}
 
-//		 Hashtable<String, Object> row = new Hashtable<>();
-//		 row.put("id", 21);
-//		 row.put("first_name", "dd");
-//		 DBApp app = new DBApp();
-//		 app.insertIntoTable("idTest", row);
+		// Hashtable<String, Object> row = new Hashtable<>();
+		// row.put("id", 21);
+		// row.put("first_name", "dd");
+		// DBApp app = new DBApp();
+		// app.insertIntoTable("idTest", row);
 
 		System.out.println("Table:");
 		for (int i = 1; i <= 3; i++) {
@@ -262,38 +260,36 @@ public class Tests {
 	// PageManager.printPageContents(PageManager.deserializePage("data/Student/page_2.ser"));
 
 	/*
-	 * // Deletion Tests // set the MaximumRowsCountinPage = 5 in
-	 * DBApp.properties
+	 * // Deletion Tests // set the MaximumRowsCountinPage = 5 in DBApp.properties
 	 * 
-	 * Page p1 = PageManager.deserializePage("data/Student/page_1.ser"); Page p2
-	 * = PageManager.deserializePage("data/Student/page_2.ser"); Page p3 =
+	 * Page p1 = PageManager.deserializePage("data/Student/page_1.ser"); Page p2 =
+	 * PageManager.deserializePage("data/Student/page_2.ser"); Page p3 =
 	 * PageManager.deserializePage("data/Student/page_3.ser");
-	 * System.out.println("Table before deletion:\n");
-	 * System.out.println("Page 1"); PageManager.printPageContents(p1);
-	 * System.out.println("Page 2"); PageManager.printPageContents(p2);
-	 * System.out.println("Page 3"); PageManager.printPageContents(p3);
+	 * System.out.println("Table before deletion:\n"); System.out.println("Page 1");
+	 * PageManager.printPageContents(p1); System.out.println("Page 2");
+	 * PageManager.printPageContents(p2); System.out.println("Page 3");
+	 * PageManager.printPageContents(p3);
 	 * 
 	 * Hashtable<String, Object> tuple = new Hashtable<>();
 	 * 
 	 * // run as is and you'll get an exception
 	 * 
-	 * // uncomment following line to test deleting a row based only on the
-	 * primary key // tuple.put("id", 100);
+	 * // uncomment following line to test deleting a row based only on the primary
+	 * key // tuple.put("id", 100);
 	 * 
 	 * // uncomment the following lines to test deleting a row given all columns
-	 * tuple.put("id", 50); tuple.put("first_name", "Hana");
-	 * tuple.put("last_name", "Ismail"); tuple.put("gpa", 0.92);
-	 * tuple.put("birth_date", new Date(1996, 11, 26)); tuple.put("gender",
-	 * true);
+	 * tuple.put("id", 50); tuple.put("first_name", "Hana"); tuple.put("last_name",
+	 * "Ismail"); tuple.put("gpa", 0.92); tuple.put("birth_date", new Date(1996, 11,
+	 * 26)); tuple.put("gender", true);
 	 * 
-	 * // uncomment following line to test deleting a row based on a non key
-	 * column // tuple.put("gender", false);
+	 * // uncomment following line to test deleting a row based on a non key column
+	 * // tuple.put("gender", false);
 	 * 
-	 * // uncomment following line to test deleting a row based on a non key
-	 * column // tuple.put("first_name", "Yasmeen");
+	 * // uncomment following line to test deleting a row based on a non key column
+	 * // tuple.put("first_name", "Yasmeen");
 	 * 
-	 * // uncomment following line to test deleting a row based on a set of non
-	 * key columns tuple.put("gender", true); tuple.put("gpa", 0.92);
+	 * // uncomment following line to test deleting a row based on a set of non key
+	 * columns tuple.put("gender", true); tuple.put("gpa", 0.92);
 	 * 
 	 * new DBApp().deleteFromTable("Student", tuple);
 	 * 

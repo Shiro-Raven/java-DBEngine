@@ -62,7 +62,7 @@ public class Page implements Serializable {
 			if (this.getRows()[i] == null) {
 				break;
 			} else {
-				output += this.getRows()[i].toString();
+				output += this.getRows()[i].toString() + '\n';
 			}
 		}
 		

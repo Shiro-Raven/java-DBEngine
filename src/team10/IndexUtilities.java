@@ -100,7 +100,7 @@ public class IndexUtilities {
 		for (File file : files.listFiles()) {
 
 			String name = file.getName();
-			if (name.substring(0, 6).equals("dense_") && name.substring(name.indexOf('.')).equals(".ser"))
+			if (name.startsWith("dense_") && name.endsWith(".ser"))
 				pages.add(PageManager.deserializePage(file.getPath()));
 
 		}

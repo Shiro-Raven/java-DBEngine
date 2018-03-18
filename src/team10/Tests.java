@@ -9,7 +9,6 @@ public class Tests {
 	public static void main(String[] args) throws Exception {
 //
 		// Declaring Columns & Their Types
-		@SuppressWarnings("unused")
 		Hashtable<String, String> htblColNameType = new Hashtable<>();
 		htblColNameType.put("id", Integer.class.getName());
 		htblColNameType.put("first_name", String.class.getName());

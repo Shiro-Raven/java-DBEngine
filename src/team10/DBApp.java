@@ -113,7 +113,14 @@ public class DBApp {
 				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
 						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 						htblColNameValue.get(indexedColumns.get(i)));
+			try {
+				IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i), changedPagesAfterDenseIndexUpdate);
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
+			
 		}
+		
 
 		/** TODO update the BRIN index after insertion **/
 

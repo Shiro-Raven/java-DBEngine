@@ -19,7 +19,8 @@ public class IndexUtilities {
 		return false;
 	}
 
-	// Checks in the meta data whether the column represents a primary key or not
+	// Checks in the meta data whether the column represents a primary key or
+	// not
 	protected static boolean isColumnPrimary(String columnMeta) throws DBAppException {
 		if (columnMeta == null) {
 			throw new DBAppException("meta data retreival error");
@@ -58,20 +59,21 @@ public class IndexUtilities {
 
 	// BRIN index business logic for now
 	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary) {
-		
+
 	}
 
 	// Creates dense index of the given column in the given table
 	protected static void createDenseIndex(String strTableName, String strColumnName) {
-		
+
 	}
-	
-	protected static void updateBRINIndex(ArrayList <Object> denseIndexChangesInfo) {
-		
+
+	protected static void updateBRINIndex(ArrayList<Object> denseIndexChangesInfo) {
+
 	}
 
 	// Get a page based on the containing directory path
-	// Throws a DBAppException in case the file path does not point to a directory
+	// Throws a DBAppException in case the file path does not point to a
+	// directory
 	// Throws a DBAppException in case the page does not exist
 	protected static Page retreivePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
 		File pageDirectory = new File(pageDirectoryPath);
@@ -115,7 +117,8 @@ public class IndexUtilities {
 
 	}
 
-	// check a file path and create directories that don't exist through the file
+	// check a file path and create directories that don't exist through the
+	// file
 	// path on the file system
 	protected static void validateDirectory(String filepath) throws IOException {
 
@@ -137,7 +140,7 @@ public class IndexUtilities {
 	}
 
 	// revise if errors occur
-	protected static void addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber, String columnName,
+	protected static int addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber, String columnName,
 			String tableName, Object newValue) {
 
 		Hashtable<String, Object> newEntry = new Hashtable<>();
@@ -173,12 +176,15 @@ public class IndexUtilities {
 			}
 			pageNumber++;
 		}
-
 		try {
 			insertIntoDenseIndex(tableName, columnName, pageNumber, targetLocation, newEntry);
+			return pageNumber;
 		} catch (IOException e) {
+			// some error occurred
 			e.printStackTrace();
+			return -1;
 		}
+
 	}
 
 	protected static boolean insertIntoDenseIndex(String tableName, String columnName, int pageNumber, int rowNumber,

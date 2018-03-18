@@ -311,8 +311,18 @@ public class InsertionUtilities {
 				for (int i = relationRowNumber; i < relationRows.length; i++) {
 
 					if (relationRows[i] == null) {
-						IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion,
-								columnName, tableName, value);
+						// add new value
+						int insertedNewValueAt = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
+								rowNumberOfInsertion, columnName, tableName, value);
+
+						if (!changedPagesInDenseIndex.contains(insertedNewValueAt))
+							changedPagesInDenseIndex.add(insertedNewValueAt);
+
+						// safety check
+						while (changedPagesInDenseIndex.contains(-1)) {
+							changedPagesInDenseIndex.remove(new Integer(-1));
+						}
+
 						return changedPagesInDenseIndex;
 					}
 
@@ -396,13 +406,18 @@ public class InsertionUtilities {
 			} catch (IOException | ClassNotFoundException e) {
 				// no more pages
 
+				// add the new value
+				int insertedNewValueAt = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
+						rowNumberOfInsertion, columnName, tableName, value);
+
+				if (!changedPagesInDenseIndex.contains(insertedNewValueAt))
+					changedPagesInDenseIndex.add(insertedNewValueAt);
+
 				// safety check
 				while (changedPagesInDenseIndex.contains(-1)) {
 					changedPagesInDenseIndex.remove(new Integer(-1));
 				}
 
-				IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName,
-						tableName, value);
 				return changedPagesInDenseIndex;
 			}
 		}

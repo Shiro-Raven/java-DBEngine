@@ -3,9 +3,11 @@ package team10;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.Set;
 
 public class DeletionUtilities {
+	// used when deletion query doesn't include any indexed columns
 	public static void deleteTuples(String strTableName, Hashtable<String, Object> htblColNameValue, String primaryKey,
 			Set<String> tableKeys) throws IOException {
 		int deleteCount = 0; // keeps track of the no. of deleted rows
@@ -19,7 +21,7 @@ public class DeletionUtilities {
 				currentPage = PageManager.deserializePage("data/" + strTableName + "/page_" + pageNumber + ".ser");
 				// page loaded successfully
 				Hashtable<String, Object>[] rows = currentPage.getRows();
-				
+
 				// traversing the page row by row until a null row is encountered
 				for (int i = 0; i < currentPage.getMaxRows(); i++) {
 					Hashtable<String, Object> row = rows[i];
@@ -68,5 +70,18 @@ public class DeletionUtilities {
 		}
 		// finalization
 		System.out.printf("%d row(s) deleted\n", deleteCount);
+	}
+
+	// used when deletion query includes an indexed column
+	public static void deleteTuplesIndexed(String strTableName, Hashtable<String, Object> htblColNameValue,
+			String primaryKey, LinkedList<String> indexed_colums, Set<String> tableKeys) throws IOException {
+		// check for PK in given tuple
+		if (htblColNameValue.get(primaryKey) != null && indexed_colums.contains(primaryKey)) {
+			// primary key provided and indexed
+			
+		} else {
+			// primary key either not provided or not indexed
+
+		}
 	}
 }

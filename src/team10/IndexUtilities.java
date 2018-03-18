@@ -109,17 +109,19 @@ public class IndexUtilities {
 				updateBRINRecord(columnName, BRINRecords[locOfDenseRecordInBRIN], minAndMaxInCurrentPage);
 				updateDeletedFlagOnBRINRecord(BRINRecords[locOfDenseRecordInBRIN], currentDenseIndexPage);
 			} else {
-				addNewBRINRecord(columnName, BRINRecords, currentDensePageLoc, minAndMaxInCurrentPage);
+				addNewBRINRecord(columnName, BRINIndexPage, currentDensePageLoc, minAndMaxInCurrentPage);
 			}
-			PageManager.serializePage(BRINIndexPage, "data/"+tableName+"/"+columnName+"/indices/BRIN"+currentBRINPageLoc+".ser");
+			PageManager.serializePage(BRINIndexPage,
+					"data/" + tableName + "/" + columnName + "/indices/BRIN" + currentBRINPageLoc + ".ser");
 
 		}
 
 	}
 
 	@SuppressWarnings("unchecked")
-	protected static void addNewBRINRecord(String columnName, Hashtable<String, Object>[] BRINRecords, int densePageLoc,
+	protected static void addNewBRINRecord(String columnName, Page BRINIndexPage, int densePageLoc,
 			Object[] newMinAndMaxValues) {
+		Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
 		ArrayList<Hashtable<String, Object>> BRINRecordList = new ArrayList<Hashtable<String, Object>>(
 				Arrays.asList(BRINRecords));
 		Hashtable<String, Object> newRecord = new Hashtable<String, Object>();
@@ -127,6 +129,7 @@ public class IndexUtilities {
 		BRINRecordList.add(newRecord);
 		Collections.sort(BRINRecordList, getBRINIndexComparator());
 		BRINRecords = (Hashtable<String, Object>[]) BRINRecordList.toArray();
+		BRINIndexPage.setRows(BRINRecords);
 	}
 
 	protected static void updateBRINRecord(String columnName, Hashtable<String, Object> BRINRecord,

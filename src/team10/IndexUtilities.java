@@ -83,7 +83,8 @@ public class IndexUtilities {
 
 			int currentDensePageLoc = (int) (changedDenseIndexPages.get(i)) - 1;
 
-			// calculate the number of the BRIN page contaning the dense index page info
+			// calculate the number of the BRIN page contaning the dense index
+			// page info
 			int currentBRINPageLoc = (currentDensePageLoc / PageManager.getBRINSize()) + 1;
 
 			// retrieve the dense index page to be updated
@@ -154,7 +155,8 @@ public class IndexUtilities {
 
 	protected static Page retrievePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
 		// Get a page based on the containing directory path
-		// Throws a DBAppException in case the file path does not point to a directory
+		// Throws a DBAppException in case the file path does not point to a
+		// directory
 		// Throws a DBAppException in case the page does not exist
 		File pageDirectory = new File(pageDirectoryPath);
 		if (!pageDirectory.exists()) {
@@ -221,10 +223,10 @@ public class IndexUtilities {
 	protected static void EraseNonExistentDenseIndexPages(String tableName, String columnName,
 			ArrayList<Integer> changedDenseIndexPages) {
 		/*
-		 * the check is only on the maximum page numbers in case a max page number does
-		 * not exist, remove it from the arraylist then recheck exists the max page
-		 * exists again for robustness once the check for existence of page passes,
-		 * break the loop
+		 * the check is only on the maximum page numbers in case a max page
+		 * number does not exist, remove it from the arraylist then recheck
+		 * exists the max page exists again for robustness once the check for
+		 * existence of page passes, break the loop
 		 */
 		do {
 			int maxPageNumber = Collections.max(changedDenseIndexPages);
@@ -241,7 +243,8 @@ public class IndexUtilities {
 	}
 
 	// Get a page based on the containing directory path
-	// Throws a DBAppException in case the file path does not point to a directory
+	// Throws a DBAppException in case the file path does not point to a
+	// directory
 	// Throws a DBAppException in case the page does not exist
 
 	// Retrieve all pages in a given path

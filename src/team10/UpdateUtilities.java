@@ -8,15 +8,6 @@ import java.util.Hashtable;
 
 public class UpdateUtilities {
 
-	public static boolean checkNotAllNulls(Hashtable<String, Object> htblColNameValue) {
-		int n = htblColNameValue.size();
-		for (String key : htblColNameValue.keySet())
-			if (htblColNameValue.get(key) != null)
-				n--;
-		return (n == 0);
-
-	}
-
 	// Here I will be returning an Arraylist of two things: the Hashtable, and
 	// the Primary Key column name
 	public static ArrayList<Object> getColumnsAndKey(String strTableName) {
@@ -30,7 +21,7 @@ public class UpdateUtilities {
 		}
 
 		String PKey = null;
-
+		ArrayList<String> indexedColumns = new ArrayList<>();
 		Hashtable<String, String> ColNameType = new Hashtable<>();
 
 		while (line != null) {
@@ -40,6 +31,8 @@ public class UpdateUtilities {
 				ColNameType.put(content[1], content[2]);
 				if ((content[3].toLowerCase()).equals("true"))
 					PKey = content[1];
+				if((content[4].toLowerCase()).equals("true"))
+					indexedColumns.add(content[1]);
 			}
 			try {
 				line = br.readLine();
@@ -57,6 +50,7 @@ public class UpdateUtilities {
 		ArrayList<Object> Data = new ArrayList<>();
 		Data.add(ColNameType);
 		Data.add(PKey);
+		Data.add(indexedColumns);
 
 		return Data;
 	}

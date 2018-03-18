@@ -11,10 +11,10 @@ public class Tests {
 	public static void main(String[] args) throws DBAppException, Exception, IOException {
 		int[] id = { 5, 4, 1, 2, 3, 6, 7, 10, 9, 8, 54, 53, 244, 21, 56 };
 		// passed! problem: neighboring duplicates
-//		 String[] firstName = { "ahmed","ahmed","hell","hell",
-//		 "mohamed","zzz","lovelife","psychopass new movie","yes, darwish, rejoice",
-//		 "reda is a computer fanatic... or is he?","i am evil","i am zen", "i am aku",
-//		 "life is a waterfall",""};
+		 String[] firstName = { "ahmed","ahmed","hell","hell",
+		 "mohamed","zzz","lovelife","psychopass new movie","yes, darwish, rejoice",
+		 "reda is a computer fanatic... or is he?","i am evil","i am zen", "i am aku",
+		 "life is a waterfall",""};
 
 		 //passed!
 //		 String[] firstName = { "ahmed","notAhmed","hell","nothell",
@@ -22,13 +22,13 @@ public class Tests {
 //		 "reda is a computer fanatic or is he?","i am evil","ahmed", "i am aku",
 //		 "life is a waterfall",""};
 		 
-//		for (int i = 0; i < id.length; i++) {
-//			Hashtable<String, Object> row = new Hashtable<>();
-//			row.put("id", id[i]);
-//			row.put("first_name", firstName[i]);
-//			DBApp app = new DBApp();
-//			app.insertIntoTable("idTest", row);
-//		}
+		for (int i = 0; i < id.length; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("id", id[i]);
+			row.put("first_name", firstName[i]);
+			DBApp app = new DBApp();
+			app.insertIntoTable("idTest", row);
+		}
 
 //		 Hashtable<String, Object> row = new Hashtable<>();
 //		 row.put("id", 21);
@@ -37,12 +37,12 @@ public class Tests {
 //		 app.insertIntoTable("idTest", row);
 
 		System.out.println("Table:");
-		for (int i = 1; i <= 4; i++) {
+		for (int i = 1; i <= 3; i++) {
 			Page page = PageManager.deserializePage("data/idTest/page_" + i + ".ser");
 			PageManager.printPageContents(page);
 		}
 		System.out.println("Dense Index on First Name:");
-		for (int i = 1; i <= 4; i++) {
+		for (int i = 1; i <= 3; i++) {
 			Page page = PageManager.deserializePage("data/idTest/first_name/Indices/Dense/page_" + i + ".ser");
 			PageManager.printPageContents(page);
 		}

@@ -1,0 +1,3 @@
+idTest,last_name,java.lang.String,FALSE,FALSE
+idTest,first_name,java.lang.String,FALSE,TRUE
+idTest,id,java.lang.Integer,TRUE,FALSE

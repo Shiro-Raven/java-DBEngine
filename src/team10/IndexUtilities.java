@@ -147,7 +147,8 @@ public class IndexUtilities {
 		newEntry.put("value", newValue);
 		newEntry.put("pageNumber", relationPageNumber);
 		newEntry.put("locInPage", relationRowNumber);
-
+		newEntry.put("isDeleted", false);
+		
 		int pageNumber = 1;
 		int targetLocation = 0;
 

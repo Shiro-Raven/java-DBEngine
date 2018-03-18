@@ -77,7 +77,9 @@ public class InsertionUtilities {
 			page.getRows()[i] = htblColNameValue;
 			htblColNameValue = tempHtblColNameValue;
 
-			if (htblColNameValue == null || ((boolean) htblColNameValue.get("isDeleted")) == true)
+			// removed isDeleted == true
+
+			if (htblColNameValue == null)
 				break;
 
 			if (i == maxRows - 1) {
@@ -287,7 +289,7 @@ public class InsertionUtilities {
 		return -1;
 	}
 
-	//returns an array list of the pages in the dense index that were changed
+	// returns an array list of the pages in the dense index that were changed
 	protected static ArrayList<Integer> updateDenseIndexAfterInsertion(String tableName, String columnName,
 			int numberOfPageOfInsertion, int rowNumberOfInsertion, Object value) throws DBAppException {
 
@@ -353,6 +355,7 @@ public class InsertionUtilities {
 					newIndexEntry.put("pageNumber", currentPage.getPageNumber());
 					newIndexEntry.put("locInPage", i);
 					newIndexEntry.put("value", relationRows[i].get(columnName));
+					newIndexEntry.put("isDeleted", relationRows[i].get("isDeleted"));
 
 					// for debugging purposes
 					// System.out.println(previousIndexEntry);

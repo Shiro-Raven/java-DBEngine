@@ -53,6 +53,11 @@ public class Page implements Serializable {
 	public int getPageNumber() {
 		return pageNumber;
 	}
+	
+
+	public void setRows(Hashtable<String, Object>[] rows) {
+		this.rows = rows;
+	}
 
 	public String toString() {
 

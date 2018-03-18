@@ -22,7 +22,8 @@ public class IndexUtilities {
 		return false;
 	}
 
-	// Checks in the meta data whether the column represents a primary key or not
+	// Checks in the meta data whether the column represents a primary key or
+	// not
 	protected static boolean isColumnPrimary(String columnMeta) throws DBAppException {
 		if (columnMeta == null) {
 			throw new DBAppException("meta data retreival error");
@@ -112,6 +113,7 @@ public class IndexUtilities {
 			}
 
 		}
+
 	}
 
 	@SuppressWarnings("unchecked")
@@ -145,6 +147,9 @@ public class IndexUtilities {
 	}
 
 	protected static Page retrievePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
+		// Get a page based on the containing directory path
+		// Throws a DBAppException in case the file path does not point to a directory
+		// Throws a DBAppException in case the page does not exist
 		File pageDirectory = new File(pageDirectoryPath);
 		if (!pageDirectory.exists()) {
 			throw new DBAppException("The file path supplied does not exist");
@@ -252,7 +257,8 @@ public class IndexUtilities {
 
 	}
 
-	// check a file path and create directories that don't exist through the file
+	// check a file path and create directories that don't exist through the
+	// file
 	// path on the file system
 	protected static void validateDirectory(String filepath) throws IOException {
 
@@ -294,13 +300,14 @@ public class IndexUtilities {
 	}
 
 	// revise if errors occur
-	protected static void addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber, String columnName,
-			String tableName, Object newValue) {
+	protected static ArrayList<Integer> addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber,
+			String columnName, String tableName, Object newValue) throws DBAppException {
 
 		Hashtable<String, Object> newEntry = new Hashtable<>();
 		newEntry.put("value", newValue);
 		newEntry.put("pageNumber", relationPageNumber);
 		newEntry.put("locInPage", relationRowNumber);
+		newEntry.put("isDeleted", false);
 
 		int pageNumber = 1;
 		int targetLocation = 0;
@@ -330,15 +337,24 @@ public class IndexUtilities {
 			}
 			pageNumber++;
 		}
-
 		try {
-			insertIntoDenseIndex(tableName, columnName, pageNumber, targetLocation, newEntry);
+			int lastChangedPage = insertIntoDenseIndex(tableName, columnName, pageNumber, targetLocation, newEntry);
+			ArrayList<Integer> changedPages = new ArrayList<Integer>();
+
+			for (int j = pageNumber; j <= lastChangedPage; j++)
+				changedPages.add(j);
+
+			return changedPages;
+
 		} catch (IOException e) {
+			// some error occurred
 			e.printStackTrace();
+			throw new DBAppException();
 		}
+
 	}
 
-	protected static boolean insertIntoDenseIndex(String tableName, String columnName, int pageNumber, int rowNumber,
+	protected static int insertIntoDenseIndex(String tableName, String columnName, int pageNumber, int rowNumber,
 			Hashtable<String, Object> htblColNameValue) throws IOException {
 		Page page = loadDenseIndexPage(tableName, columnName, pageNumber);
 		int maxRows = PageManager.getMaximumRowsCountinPage();
@@ -366,7 +382,7 @@ public class IndexUtilities {
 
 		PageManager.serializePage(page,
 				"data/" + tableName + "/" + columnName + "/indices/Dense/" + "page_" + page.getPageNumber() + ".ser");
-		return true;
+		return page.getPageNumber();
 	}
 
 	// warning: should not be used to load pages in a loop; the loop will become

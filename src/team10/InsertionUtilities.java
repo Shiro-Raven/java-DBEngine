@@ -2,7 +2,6 @@ package team10;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Hashtable;
 import java.util.Set;
@@ -78,7 +77,9 @@ public class InsertionUtilities {
 			page.getRows()[i] = htblColNameValue;
 			htblColNameValue = tempHtblColNameValue;
 
-			if (htblColNameValue == null || ((boolean) htblColNameValue.get("isDeleted")) == true)
+			// removed isDeleted == true
+
+			if (htblColNameValue == null)
 				break;
 
 			if (i == maxRows - 1) {
@@ -288,14 +289,12 @@ public class InsertionUtilities {
 		return -1;
 	}
 
+	// returns an array list of the pages in the dense index that were changed
 	protected static ArrayList<Integer> updateDenseIndexAfterInsertion(String tableName, String columnName,
-			int numberOfPageOfInsertion, int rowNumberOfInsertion, Object value) {
+			int numberOfPageOfInsertion, int rowNumberOfInsertion, Object value) throws DBAppException {
 
 		int relationPageNumber = numberOfPageOfInsertion;
 		int relationRowNumber = rowNumberOfInsertion;
-
-		// array list to use in updating the brin index
-		ArrayList<Integer> changedPagesInDenseIndex = new ArrayList<>();
 
 		// point to the value after the insertion
 		relationRowNumber++;
@@ -312,9 +311,11 @@ public class InsertionUtilities {
 				for (int i = relationRowNumber; i < relationRows.length; i++) {
 
 					if (relationRows[i] == null) {
-						IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion,
-								columnName, tableName, value);
-						return changedPagesInDenseIndex;
+						// add new value
+						ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(
+								numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value);
+
+						return addNewValueChanges;
 					}
 
 					int previousRowNumber;
@@ -348,14 +349,18 @@ public class InsertionUtilities {
 					previousIndexEntry.put("pageNumber", previousPageNumber);
 					previousIndexEntry.put("locInPage", previousRowNumber);
 					previousIndexEntry.put("value", relationRows[i].get(columnName));
+					previousIndexEntry.put("isDeleted", relationRows[i].get("isDeleted"));
 
 					// new entry
 					Hashtable<String, Object> newIndexEntry = new Hashtable<>();
 					newIndexEntry.put("pageNumber", currentPage.getPageNumber());
 					newIndexEntry.put("locInPage", i);
 					newIndexEntry.put("value", relationRows[i].get(columnName));
-					System.out.println(previousIndexEntry);
-					System.out.println(newIndexEntry);
+					newIndexEntry.put("isDeleted", relationRows[i].get("isDeleted"));
+
+					// for debugging purposes
+					// System.out.println(previousIndexEntry);
+					// System.out.println(newIndexEntry);
 
 					if (IndexUtilities.checkForRelationConsecutiveDuplicates(currentPage, i, tableName, columnName)) {
 						int[] resumeUpdateDenseIndexAt = new int[2];
@@ -365,16 +370,14 @@ public class InsertionUtilities {
 						} catch (IOException e) {
 							e.printStackTrace();
 						}
+
 						relationPageNumber = resumeUpdateDenseIndexAt[0];
 						relationRowNumber = resumeUpdateDenseIndexAt[1];
 						continue whileLoop;
-					} else {
-						int editedIndexPage = IndexUtilities.findAndReplaceInDenseIndex(tableName, columnName,
-								previousIndexEntry, newIndexEntry);
 
-						if (!changedPagesInDenseIndex.contains(editedIndexPage)) {
-							changedPagesInDenseIndex.add(editedIndexPage);
-						}
+					} else {
+						IndexUtilities.findAndReplaceInDenseIndex(tableName, columnName, previousIndexEntry,
+								newIndexEntry);
 					}
 
 				}
@@ -386,14 +389,11 @@ public class InsertionUtilities {
 			} catch (IOException | ClassNotFoundException e) {
 				// no more pages
 
-				// safety check
-				while (changedPagesInDenseIndex.contains(-1)) {
-					changedPagesInDenseIndex.remove(new Integer(-1));
-				}
+				// add new value
+				ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
+						rowNumberOfInsertion, columnName, tableName, value);
 
-				IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion, rowNumberOfInsertion, columnName,
-						tableName, value);
-				return changedPagesInDenseIndex;
+				return addNewValueChanges;
 			}
 		}
 	}

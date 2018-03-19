@@ -63,12 +63,16 @@ public class InsertionUtilities {
 	}
 
 	public static boolean insertTuple(String tableName, int[] positionToInsertAt,
-			Hashtable<String, Object> htblColNameValue) throws IOException {
+			Hashtable<String, Object> htblColNameValue, boolean isNew) throws IOException {
 
 		Page page = InsertionUtilities.loadPage(tableName, positionToInsertAt[0]);
 		int maxRows = PageManager.getMaximumRowsCountinPage();
-		htblColNameValue.put("TouchDate", new Date());
-		htblColNameValue.put("isDeleted", false);
+		if(isNew) {
+			
+			htblColNameValue.put("TouchDate", new Date());
+			htblColNameValue.put("isDeleted", false);
+			
+		}
 		Hashtable<String, Object> tempHtblColNameValue;
 
 		for (int i = positionToInsertAt[1]; i < maxRows; i++) {

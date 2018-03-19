@@ -96,7 +96,7 @@ public class Tests {
 			row.put("id", id);
 			row.put("first_name", ranStr.nextString());
 
-			app.insertIntoTable("idTest", row);
+			app.insertIntoTable("idTest", row, true);
 
 		}
 

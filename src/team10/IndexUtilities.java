@@ -6,6 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -76,7 +79,7 @@ public class IndexUtilities {
 		int tablePageNumber = 1;
 		String tempDirName = "Temp";
 
-		moveTuplesToDir(strTableName, tempDirName);
+		Path tmpDirPath = moveTuplesToDir(strTableName);
 		new File("data/" + strTableName + "/" + strColumnName + "/indices/Dense/").mkdirs();
 		setColumnIndexed(strTableName, strColumnName);
 
@@ -86,8 +89,7 @@ public class IndexUtilities {
 
 			try {
 
-				tablePage = PageManager.deserializePage(
-						"data/" + strTableName + "/" + tempDirName + "/page_" + tablePageNumber++ + ".ser");
+				tablePage = PageManager.deserializePage(tmpDirPath.toString() + "page_" + tablePageNumber++ + ".ser");
 
 			} catch (ClassNotFoundException | IOException e) {
 
@@ -105,26 +107,20 @@ public class IndexUtilities {
 
 	}
 
-	protected static boolean moveTuplesToDir(String strTableName, String dirName) throws IOException {
+	protected static Path moveTuplesToDir(String strTableName) throws IOException {
 
 		// TODO: Check if table exists
 
 		File tableDir = new File("data/" + strTableName + "/");
-		new File("data/" + strTableName + "/" + dirName + "/").delete();
+		Path tmpDirPath = Files.createTempDirectory("DBAppTeam10-");
 
-		if (new File("data/" + strTableName + "/" + dirName).mkdir()) {
+		for (File file : tableDir.listFiles())
+			if (!file.isDirectory() && file.getName().endsWith(".ser")) {
+				file.renameTo(new File(tmpDirPath.toString() + file.getName()));
+				file.delete();
+			}
 
-			for (File file : tableDir.listFiles())
-				if (!file.isDirectory() && file.getName().endsWith(".ser")) {
-					file.renameTo(new File("data/" + strTableName + "/" + dirName + "/" + file.getName()));
-					file.delete();
-				}
-
-			return true;
-
-		}
-
-		return false;
+		return tmpDirPath;
 
 	}
 
@@ -133,7 +129,7 @@ public class IndexUtilities {
 		String csvFullText = "";
 		String line = null;
 		BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
-		
+
 		while ((line = br.readLine()) != null) {
 			String[] content = line.split(",");
 

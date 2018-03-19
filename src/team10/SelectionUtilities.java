@@ -126,9 +126,8 @@ public class SelectionUtilities {
 			if (page == null)
 				break;
 
-			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++) {
-
-			}
+			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++);
+				
 
 		}
 
@@ -136,14 +135,14 @@ public class SelectionUtilities {
 
 	}
 
-	protected static boolean isValueInResultSet(String columnValue, Object[] objarrValues, String[] strarrOperators)
+	protected static boolean isValueInResultSet(Object columnValue, Object[] objarrValues, String[] strarrOperators)
 			throws DBAppException {
 		
 		return isValueInResultSet(columnValue, objarrValues, strarrOperators, 0);
 
 	}
 
-	protected static boolean isValueInResultSet(String columnValue, Object[] objarrValues, String[] strarrOperators,
+	protected static boolean isValueInResultSet(Object columnValue, Object[] objarrValues, String[] strarrOperators,
 			int index) throws DBAppException {
 
 		if (index == objarrValues.length)

@@ -101,6 +101,27 @@ public class Tests {
 		}
 
 		testIndex("idTest", "first_name");
+	}
+
+	static void insertValuesIntoTable() throws DBAppException {
+		DBApp app = new DBApp();
+		RandomString ranStr = new RandomString(8);
+		Hashtable<String, Object> row = new Hashtable<>();
+		for (int i = 1; i <= 1000; i++) {
+			row.put("id", i);
+			row.put("name", ranStr.nextString());
+			app.insertIntoTable("mockTable", row);
+
+		}
+
+	}
+
+	static void createMockTable() throws DBAppException {
+		DBApp app = new DBApp();
+		Hashtable<String, String> columns = new Hashtable<String, String>();
+		columns.put("id", "java.lang.Integer");
+		columns.put("name", "java.lang.String");
+		app.createTable("mockTable", "id", columns);
 
 	}
 

@@ -1,10 +1,10 @@
 package team10;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Random;
 
 public class Tests {
+	
+	static String tblName = "mockTable";
 
 	static void testDenseIndex(String tblName, String colName) {
 
@@ -111,42 +111,22 @@ public class Tests {
 
 	public static void main(String[] args) throws Exception {
 
-		DBApp app = new DBApp();
-		ArrayList<Integer> usedId = new ArrayList<Integer>();
-		Random ranInt = new Random(Integer.MAX_VALUE);
-		RandomString ranStr = new RandomString(8);
+		createMockTable();
+		insertValuesIntoTable();
+		new DBApp().createBRINIndex(tblName, "name");
+		testDenseIndex(tblName, "name");
+		testBRINIndex(tblName, "name");
 
-		Hashtable<String, String> hRow = new Hashtable<>();
-		hRow.put("id", Integer.class.getName());
-		hRow.put("first_name", String.class.getName());
-		app.createTable("idTest", "id", hRow);
-
-		for (int i = 0; i < 200; i++) {
-
-			Hashtable<String, Object> row = new Hashtable<>();
-
-			int id;
-			do {
-				id = ranInt.nextInt();
-			} while (usedId.contains(id));
-			usedId.add(id);
-
-			row.put("id", id);
-			row.put("first_name", ranStr.nextString());
-
-			app.insertIntoTable("idTest", row);
-
-		}
 	}
 
 	static void insertValuesIntoTable() throws DBAppException {
 		DBApp app = new DBApp();
 		RandomString ranStr = new RandomString(8);
 		Hashtable<String, Object> row = new Hashtable<>();
-		for (int i = 1; i <= 1000; i++) {
+		for (int i = 1; i <= 200; i++) {
 			row.put("id", i);
 			row.put("name", ranStr.nextString());
-			app.insertIntoTable("mockTable", row);
+			app.insertIntoTable(tblName, row);
 
 		}
 
@@ -157,7 +137,7 @@ public class Tests {
 		Hashtable<String, String> columns = new Hashtable<String, String>();
 		columns.put("id", "java.lang.Integer");
 		columns.put("name", "java.lang.String");
-		app.createTable("mockTable", "id", columns);
+		app.createTable(tblName, "id", columns);
 	}
 
 }

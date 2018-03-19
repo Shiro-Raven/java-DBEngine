@@ -9,6 +9,66 @@ import java.util.Iterator;
 
 public class SelectionUtilities {
 
+	// the main method for the select functionality
+	// according to the column we select on, whether it is the primary key, and
+	// whether it is indexed, the path of execution is chosen
+	protected static Iterator<Hashtable<String, Object>> selectFromTableHelper(String tableName, String columnName,
+			Object[] arguments, String[] operators) throws DBAppException {
+		ArrayList<Hashtable<String, Object>> output = new ArrayList<Hashtable<String, Object>>();
+
+		/**
+		 * TODO defensive checks to ensure table exists and column exists
+		 */
+
+		String primaryKey = getPrimaryKeyColumnName(tableName);
+
+		ArrayList<String> indexedColumns = getIndexedColumns(tableName);
+
+		if (columnName.equals(primaryKey)) {
+			if (indexedColumns.contains(columnName)) {
+				// indexed and primary key
+			} else {
+				// primary key only
+			}
+		} else {
+			if (indexedColumns.contains(columnName)) {
+				// indexed and not primary key
+			} else {
+				// not primary key and not indexed
+			}
+		}
+
+		return output.iterator();
+	}
+
+	// searches the BRIN index and returns the numbers of the pages that
+	// satisfied the conditions of the query.
+	// These pages may be table pages or dense index pages
+	// it all depends on whether we are answering a primary key query or not.
+	protected static ArrayList<Integer> getSatisfyingPagesFromBrinIndex(String tableName, String columnName,
+			Object[] arguments, String[] operators) throws DBAppException {
+		String brinIndexPath = "data/" + tableName + "/" + columnName + "indices/BRIN/";
+		ArrayList<Integer> satisfyingPageNumbers = new ArrayList<Integer>();
+
+		int brinPageNumber = 1;
+
+		while (true) {
+			Page brinPage = PageManager.loadPageIfExists(brinIndexPath + "page_" + brinPageNumber + ".ser");
+			if (brinPage == null)
+				break;
+			for (int i = 0; i < brinPage.getRows().length; i++) {
+				Hashtable<String, Object> currentRow = brinPage.getRows()[i];
+				if (brinEntrySatisfiesConditions(currentRow.get(columnName + "Max"), currentRow.get(columnName + "Min"),
+						arguments, operators) && !((boolean) currentRow.get("isDeleted"))) {
+					satisfyingPageNumbers.add((Integer) currentRow.get("pageNumber"));
+				}
+			}
+			brinPageNumber++;
+		}
+
+		return satisfyingPageNumbers;
+	}
+
 	// checks if the range in a BRIN index entry satisfies the query conditions
 	protected static boolean brinEntrySatisfiesConditions(Object brinMax, Object brinMin, Object[] arguments,
 			String[] operators) throws DBAppException {

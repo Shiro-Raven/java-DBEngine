@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.Set;
 
 public class DBApp {
@@ -56,7 +57,7 @@ public class DBApp {
 
 		while (line != null) {
 			String[] content = line.split(",");
-			
+
 			if (content[0].equals(strTableName)) {
 				data.add(content);
 				ColNameType.put(content[1], content[2]);
@@ -119,9 +120,9 @@ public class DBApp {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-			}else {
+			} else {
 				try {
-					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey,positionToInsertAt[0]);
+					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
 				} catch (ClassNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -317,4 +318,9 @@ public class DBApp {
 
 	}
 
+	@SuppressWarnings("rawtypes")
+	public Iterator selectFromTable(String strTableName, String strColumnName, Object[] objarrValues,
+			String[] strarrOperators) throws DBAppException {
+		return SelectionUtilities.selectFromTableHelper(strTableName, strColumnName, objarrValues, strarrOperators);
+	}
 }

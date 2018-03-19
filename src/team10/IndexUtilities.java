@@ -143,7 +143,7 @@ public class IndexUtilities {
 				csvFullText += content[0] + "," + content[1] + "," + content[2] + "," + content[3] + "," + "true"
 						+ "\n";
 			else
-				csvFullText += line;
+				csvFullText += line + "\n";
 
 			PrintWriter writer = new PrintWriter("data/metadata.csv");
 			writer.print(csvFullText);

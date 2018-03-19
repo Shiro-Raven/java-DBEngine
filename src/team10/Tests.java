@@ -6,19 +6,19 @@ import java.util.Random;
 
 public class Tests {
 
-	static void testIndex(String tblName, String colName) {
+	static void testDenseIndex(String tblName, String colName) {
 
 		int denseIndexPageNumber = 1;
 		Object lastValue = '\n';
 
 		while (true) {
 
-			Page denseIndexPage = loadPage(
+			Page denseIndexPage = PageManager.loadPageIfExists(
 					"data/" + tblName + "/" + colName + "/indices/Dense/page_" + denseIndexPageNumber++ + ".ser");
 
 			if (denseIndexPage == null) {
 
-				System.out.println("Check Is Complete!");
+				System.out.println("Dense Check Is Complete!");
 				return;
 
 			}
@@ -28,7 +28,7 @@ public class Tests {
 
 				Hashtable<String, Object> denseIndexRow = denseIndexPage.getRows()[i];
 
-				Page tablePage = loadPage(
+				Page tablePage = PageManager.loadPageIfExists(
 						"data/" + tblName + "/page_" + ((Integer) denseIndexRow.get("pageNumber")) + ".ser");
 
 				if (tablePage == null) {
@@ -56,16 +56,53 @@ public class Tests {
 		}
 
 	}
+	
+	static void testBRINIndex(String tblName, String colName) {
 
-	static Page loadPage(String filepath) {
+		int denseIndexPageNumber = 1;
+		Object lastValue = '\n';
 
-		try {
+		while (true) {
 
-			return PageManager.deserializePage(filepath);
+			Page denseIndexPage = PageManager.loadPageIfExists(
+					"data/" + tblName + "/" + colName + "/indices/BRIN/page_" + denseIndexPageNumber++ + ".ser");
 
-		} catch (Exception e) {
+			if (denseIndexPage == null) {
 
-			return null;
+				System.out.println("BRIN Check Is Complete!");
+				return;
+
+			}
+
+			// Looping Through Rows Of EACH Index File
+			for (int i = 0; i < denseIndexPage.getMaxRows() && denseIndexPage.getRows()[i] != null; i++) {
+
+				Hashtable<String, Object> denseIndexRow = denseIndexPage.getRows()[i];
+
+				Page tablePage = PageManager.loadPageIfExists(
+						"data/" + tblName + "/page_" + ((Integer) denseIndexRow.get("pageNumber")) + ".ser");
+
+				if (tablePage == null) {
+
+					System.out.println("NOT FOUND: " + denseIndexRow);
+					continue;
+
+				}
+
+				// Checking Not Equality And Deletion
+				Hashtable<String, Object> tableRow = tablePage.getRows()[(Integer) denseIndexRow.get("locInPage")];
+				if (!denseIndexRow.get("value").equals(tableRow.get(colName)))
+					System.out.println("NOT EQUAL: " + denseIndexRow.get("value") + " & " + tableRow.get(colName));
+				if (!denseIndexRow.get("isDeleted").equals(tableRow.get("isDeleted")))
+					System.out.println("DELETION ERROR: " + denseIndexRow + " & " + tableRow);
+
+				// Checking Increasing Order Of Dense Indices
+				if (lastValue.toString().compareTo(denseIndexRow.get("value").toString()) > 0)
+					System.out.println("ERROR WITH ORDER: " + lastValue.toString() + " & "
+							+ denseIndexRow.get("value").toString());
+				lastValue = denseIndexRow.get("value");
+
+			}
 
 		}
 
@@ -101,7 +138,7 @@ public class Tests {
 		}
 
 		IndexUtilities.createDenseIndex("idTest", "first_name");
-		testIndex("idTest", "first_name");
+		testDenseIndex("idTest", "first_name");
 
 	}
 

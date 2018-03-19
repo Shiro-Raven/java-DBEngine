@@ -188,7 +188,8 @@ public class SelectionUtilities {
 				break;
 
 			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++)
-				if (isValueInResultSet(page.getRows()[i].get(strColumnName), objarrValues, strarrOperators))
+				if (isValueInResultSet(page.getRows()[i].get(strColumnName), objarrValues, strarrOperators)
+						&& ((boolean) page.getRows()[i].get("isDeleted") == false))
 					output.add(page.getRows()[i]);
 
 		}
@@ -213,6 +214,39 @@ public class SelectionUtilities {
 		else
 			return compareColumnToArgumentUsingOperator(columnValue, objarrValues[index], strarrOperators[index])
 					&& isValueInResultSet(columnValue, objarrValues, strarrOperators, ++index);
+
+	}
+
+	// Checks From Dense Indexed Column
+	protected static Iterator<Hashtable<String, Object>> denseIndexRetrieval(String strTableName, String strColumnName,
+			Object[] objarrValues, String[] strarrOperators, ArrayList<Integer> denseIndexPageNumbers)
+			throws DBAppException {
+
+		ArrayList<Hashtable<String, Object>> output = new ArrayList<Hashtable<String, Object>>();
+
+		for (int denseIndexPageNumber : denseIndexPageNumbers) {
+
+			Page page = PageManager.loadPageIfExists("data/" + strTableName + "/" + strColumnName
+					+ "/indices/Dense/page_" + denseIndexPageNumber + ".ser");
+
+			if (page == null)
+				break;
+
+			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++)
+				if (isValueInResultSet(page.getRows()[i].get(strColumnName), objarrValues, strarrOperators)
+						&& ((boolean) page.getRows()[i].get("isDeleted") == false)) {
+
+					Page tempPage = PageManager.loadPageIfExists(
+							"data/" + strTableName + "/page_" + ((int) page.getRows()[i].get("pageNumber")) + ".ser");
+					Hashtable<String, Object> tuple = tempPage.getRows()[((int) page.getRows()[i].get("locInPage"))];
+
+					output.add(tuple);
+
+				}
+
+		}
+
+		return output.iterator();
 
 	}
 

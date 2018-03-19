@@ -75,14 +75,14 @@ public class DeletionUtilities {
 
 	// used when deletion query includes an indexed column
 	public static void deleteTuplesIndexed(String strTableName, Hashtable<String, Object> htblColNameValue,
-			String primaryKey, LinkedList<String> indexed_colums, Set<String> tableKeys) throws IOException {
+			String primaryKey, LinkedList<String> indexed_columns, Set<String> tableKeys) throws IOException {
 		int deleteCount = 0; // keeps track of the no. of deleted rows
 		Page pageBRIN = null;
 		int pageNumberBRIN = 1;
 		ArrayList<Integer> modifiedBRIN = new ArrayList<Integer>();
 
 		// check for PK in given tuple
-		if (htblColNameValue.get(primaryKey) != null && indexed_colums.contains(primaryKey)) {
+		if (htblColNameValue.get(primaryKey) != null && indexed_columns.contains(primaryKey)) {
 			// primary key provided and indexed
 			boolean active = true;
 			// load and process BRIN index pages one by one until there are no more pages
@@ -102,6 +102,10 @@ public class DeletionUtilities {
 						continue;
 					}
 
+					// if the target was less than the current minimum then it doesn't exist
+					else if (positionInIndex == -2)
+						break;
+
 					// if target is within a range in this index page
 					else {
 						// add BRIN page number to modified BRIN pages ArrayList
@@ -120,7 +124,7 @@ public class DeletionUtilities {
 						// traversing the page row by row until a null row is encountered
 						for (int i = 0; i < pageToDeleteFrom.getMaxRows(); i++) {
 							Hashtable<String, Object> row = rows[i];
-							
+
 							// end of page
 							if (row == null)
 								break;
@@ -138,8 +142,8 @@ public class DeletionUtilities {
 
 						PageManager.serializePage(pageToDeleteFrom,
 								"data/" + strTableName + "/page_" + pageToDeleteFrom.getPageNumber() + ".ser");
-						
-					}	
+
+					}
 				} catch (FileNotFoundException e) {
 					// there are no more pages in this table
 					active = false; // break out of the while loop to finalize
@@ -147,19 +151,124 @@ public class DeletionUtilities {
 					// unexpected exception
 					e.printStackTrace();
 				}
-				
+
 				if (!active)
 					break;
 			}
 		} else {
 			// primary key either not provided or not indexed
+			// choose an indexed column to use
+			String indexedColumn = indexed_columns.getFirst();
+			boolean active = true;
+			// load and process BRIN index pages one by one until there are no more pages
+			while (true) {
+				try {
+					// retrieve the index page
+					pageBRIN = PageManager.deserializePage("data/" + strTableName + "/" + indexedColumn
+							+ "/indices/BRIN/" + "page_" + pageNumberBRIN + ".ser");
 
+					@SuppressWarnings("rawtypes")
+					int positionInIndex = searchBRIN(pageBRIN.getRows(),
+							(Comparable) htblColNameValue.get(indexedColumn), indexedColumn);
+
+					// if not within any range in this index page, load the next page
+					if (positionInIndex == -1) {
+						pageNumberBRIN++;
+						continue;
+					}
+
+					// the target was smaller than the min of a page it reached so it doesn't exist
+					else if (positionInIndex == -2)
+						break;
+
+					// if target is within a range in this index page
+					else {
+						// add BRIN page number to modified BRIN pages ArrayList
+						modifiedBRIN.add(pageNumberBRIN);
+
+						// get pageNumber
+						int pageNumberDense = (int) pageBRIN.getRows()[positionInIndex].get("pageNumber");
+
+						// load Dense index page
+						Page pageDense = null;
+						pageDense = PageManager.deserializePage("data/" + strTableName + "/" + indexedColumn
+								+ "/indices/Dense/" + "page_" + pageNumberDense + ".ser");
+						Hashtable<String, Object>[] rowsDense = pageDense.getRows();
+
+						// traversing the Dense index page row by row until a null row is encountered
+						for (int i = 0; i < pageDense.getMaxRows(); i++) {
+							Hashtable<String, Object> rowDense = rowsDense[i];
+
+							// end of page
+							if (rowDense == null)
+								break;
+
+							// checking for dense index match
+							if (rowDense.get(indexedColumn).equals(htblColNameValue.get(indexedColumn))
+									&& !(boolean) rowDense.get("isDeleted")) {
+								// current row matches the given tuple, proceed in deleting it
+								// delete all Dense consecutive duplicates that match the query
+								for (int j = i; j < pageDense.getMaxRows(); j++) {
+									rowDense = rowsDense[j];
+									if (!rowDense.get(indexedColumn).equals(htblColNameValue.get(indexedColumn)))
+										break;
+									// get pageNumber and locInPage
+									int pageNumber = (int) rowDense.get("pageNumber");
+									int locInPage = (int) rowDense.get("locInPage");
+									// load page
+									Page pageToDeleteFrom = null;
+									pageToDeleteFrom = PageManager.deserializePage(
+											"data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
+									Hashtable<String, Object> row = pageToDeleteFrom.getRows()[locInPage];
+									// check if row matches the given tuple
+									boolean match = true;
+									for (String tableKey : tableKeys) {
+										if (htblColNameValue.get(tableKey) != null
+												&& !htblColNameValue.get(tableKey).equals(row.get(tableKey))) {
+											match = false;
+											break;
+										}
+									}
+									if (match && !(boolean) row.get("isDeleted")) {
+										rowDense.put("isDeleted", true);
+										row.put("isDeleted", true);
+										PageManager.serializePage(pageToDeleteFrom, "data/" + strTableName + "/"
+												+ "page_" + pageToDeleteFrom.getPageNumber() + ".ser");
+										deleteCount++;
+										// checking for PK match
+										if (htblColNameValue.get(primaryKey) != null
+												&& htblColNameValue.get(primaryKey).equals(row.get(primaryKey))) {
+											// current row matches a given primary key value, no more rows can match
+											active = false;
+											break;
+										}
+									}
+								}
+								break;
+							}
+						}
+
+						PageManager.serializePage(pageDense, "data/" + strTableName + "/" + indexedColumn
+								+ "/indices/Dense/" + "page_" + pageDense.getPageNumber() + ".ser");
+
+					}
+				} catch (FileNotFoundException e) {
+					// there are no more pages in this table
+					active = false; // break out of the while loop to finalize
+				} catch (Exception e) {
+					// unexpected exception
+					e.printStackTrace();
+				}
+
+				if (!active)
+					break;
+			}
 		}
 
 		// TODO pass modifiedBRIN to updateBRIN() method
-		
+
 		// finalization
-				System.out.printf("%d row(s) deleted\n", deleteCount);
+		System.out.printf("%d row(s) deleted\n", deleteCount);
 	}
 
 	// adapted from InsertionUtilities.searchIndex()
@@ -170,20 +279,24 @@ public class DeletionUtilities {
 			// the index's page is not fully empty and we reached the end of its
 			// entries
 			// I assume that there are no fully empty index pages
-			if (rows[i] == null) {
-				return i - 1;
-			}
-			
+			if (rows[i] == null)
+				return -1;
+
 			// check if the index row is deleted
-			if ((boolean)rows[i].get("isDeleted"))
+			if ((boolean) rows[i].get("isDeleted"))
 				continue;
-			
+
 			Comparable currentRowMax = (Comparable) rows[i].get(indexedKey + "Max");
 			Comparable currentRowMin = (Comparable) rows[i].get(indexedKey + "Min");
 
 			// if the target belongs in the range
 			if (target.compareTo(currentRowMax) <= 0 && target.compareTo(currentRowMin) >= 0) {
 				return i;
+			}
+
+			// if the target is below the range
+			if (target.compareTo(currentRowMin) < 0) {
+				return -2;
 			}
 		}
 		// no place found

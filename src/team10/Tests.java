@@ -1,6 +1,5 @@
 package team10;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Random;
@@ -18,20 +17,19 @@ public class Tests {
 					"data/" + tblName + "/" + colName + "/indices/Dense/page_" + denseIndexPageNumber++ + ".ser");
 
 			if (denseIndexPage == null) {
-				
+
 				System.out.println("Check Is Complete!");
 				return;
-				
+
 			}
 
 			// Looping Through Rows Of EACH Index File
-			for (int i = 0; i < denseIndexPage.getRows().length; i++) {
-				
+			for (int i = 0; i < denseIndexPage.getMaxRows() && denseIndexPage.getRows()[i] != null; i++) {
+
 				Hashtable<String, Object> denseIndexRow = denseIndexPage.getRows()[i];
-				if(denseIndexRow == null)
-					return;
-				
-				Page tablePage = loadPage("data/" + tblName + "/page_" + ((Integer) denseIndexRow.get("pageNumber")) + ".ser");
+
+				Page tablePage = loadPage(
+						"data/" + tblName + "/page_" + ((Integer) denseIndexRow.get("pageNumber")) + ".ser");
 
 				if (tablePage == null) {
 
@@ -42,16 +40,17 @@ public class Tests {
 
 				// Checking Not Equality And Deletion
 				Hashtable<String, Object> tableRow = tablePage.getRows()[(Integer) denseIndexRow.get("locInPage")];
-				if(!denseIndexRow.get("value").equals(tableRow.get(colName)))
+				if (!denseIndexRow.get("value").equals(tableRow.get(colName)))
 					System.out.println("NOT EQUAL: " + denseIndexRow.get("value") + " & " + tableRow.get(colName));
-				if(!denseIndexRow.get("isDeleted").equals(tableRow.get("isDeleted")))
+				if (!denseIndexRow.get("isDeleted").equals(tableRow.get("isDeleted")))
 					System.out.println("DELETION ERROR: " + denseIndexRow + " & " + tableRow);
-				
+
 				// Checking Increasing Order Of Dense Indices
-				if(lastValue.toString().compareTo(denseIndexRow.get("value").toString()) > 0)
-					System.out.println("ERROR WITH ORDER: " + lastValue.toString() + " & " + denseIndexRow.get("value").toString());
+				if (lastValue.toString().compareTo(denseIndexRow.get("value").toString()) > 0)
+					System.out.println("ERROR WITH ORDER: " + lastValue.toString() + " & "
+							+ denseIndexRow.get("value").toString());
 				lastValue = denseIndexRow.get("value");
-				
+
 			}
 
 		}
@@ -72,14 +71,19 @@ public class Tests {
 
 	}
 
-	public static void main(String[] args) throws DBAppException, Exception, IOException {
+	public static void main(String[] args) throws Exception {
 
 		DBApp app = new DBApp();
 		ArrayList<Integer> usedId = new ArrayList<Integer>();
 		Random ranInt = new Random(Integer.MAX_VALUE);
 		RandomString ranStr = new RandomString(8);
 
-		for (int i = 0; i < 1000; i++) {
+		Hashtable<String, String> hRow = new Hashtable<>();
+		hRow.put("id", Integer.class.getName());
+		hRow.put("first_name", String.class.getName());
+		app.createTable("idTest", "id", hRow);
+
+		for (int i = 0; i < 200; i++) {
 
 			Hashtable<String, Object> row = new Hashtable<>();
 
@@ -95,7 +99,7 @@ public class Tests {
 			app.insertIntoTable("idTest", row);
 
 		}
-		
+
 		testIndex("idTest", "first_name");
 
 	}

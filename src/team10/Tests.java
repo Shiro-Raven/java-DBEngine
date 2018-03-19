@@ -6,19 +6,19 @@ import java.util.Random;
 
 public class Tests {
 
-	static void testIndex(String tblName, String colName) {
+	static void testDenseIndex(String tblName, String colName) {
 
 		int denseIndexPageNumber = 1;
 		Object lastValue = '\n';
 
 		while (true) {
 
-			Page denseIndexPage = loadPage(
+			Page denseIndexPage = PageManager.loadPageIfExists(
 					"data/" + tblName + "/" + colName + "/indices/Dense/page_" + denseIndexPageNumber++ + ".ser");
 
 			if (denseIndexPage == null) {
 
-				System.out.println("Check Is Complete!");
+				System.out.println("Dense Check Is Complete!");
 				return;
 
 			}
@@ -28,7 +28,7 @@ public class Tests {
 
 				Hashtable<String, Object> denseIndexRow = denseIndexPage.getRows()[i];
 
-				Page tablePage = loadPage(
+				Page tablePage = PageManager.loadPageIfExists(
 						"data/" + tblName + "/page_" + ((Integer) denseIndexRow.get("pageNumber")) + ".ser");
 
 				if (tablePage == null) {
@@ -57,15 +57,53 @@ public class Tests {
 
 	}
 
-	static Page loadPage(String filepath) {
+	static void testBRINIndex(String tblName, String colName) {
 
-		try {
+		int BRINIndexPageNumber = 1;
+		Object lastValue = '\n';
 
-			return PageManager.deserializePage(filepath);
+		while (true) {
 
-		} catch (Exception e) {
+			Page BRINIndexPage = PageManager.loadPageIfExists(
+					"data/" + tblName + "/" + colName + "/indices/BRIN/page_" + BRINIndexPageNumber++ + ".ser");
 
-			return null;
+			if (BRINIndexPage == null) {
+
+				System.out.println("BRIN Check Is Complete!");
+				return;
+
+			}
+
+			// Looping Through Rows Of EACH Index File
+			for (int i = 0; i < BRINIndexPage.getMaxRows() && BRINIndexPage.getRows()[i] != null; i++) {
+
+				Hashtable<String, Object> BRINIndexRow = BRINIndexPage.getRows()[i];
+				Page tempPage = PageManager.loadPageIfExists(
+						"data/" + tblName + "/page_" + ((int) BRINIndexRow.get("pageNumber")) + ".ser");
+
+				int lastIndex;
+				for (lastIndex = -1; lastIndex < (tempPage.getMaxRows() - 1)
+						&& tempPage.getRows()[lastIndex + 1] != null; lastIndex++)
+					;
+
+				if (!tempPage.getRows()[0].get(colName).equals(BRINIndexRow.get(colName + "Min")))
+					System.out.println("Error With Initial Values: " + BRINIndexRow + " & " + tempPage.getRows()[0]);
+				if (!tempPage.getRows()[lastIndex].get(colName).equals(BRINIndexRow.get(colName + "Max")))
+					System.out.println(
+							"Error With Final Values: " + BRINIndexRow + " & " + tempPage.getRows()[lastIndex]);
+
+				if (BRINIndexRow.get(colName + "Min").toString().toString()
+						.compareTo(BRINIndexRow.get(colName + "Max").toString()) > 0)
+					System.out.println("ERROR WITH ORDER of Tuple: " + lastValue.toString() + " & "
+							+ BRINIndexRow.get(colName + "Max").toString());
+
+				// Checking Increasing Order Of BRIN Indices
+				if (lastValue.toString().compareTo(BRINIndexRow.get(colName + "Max").toString()) > 0)
+					System.out.println("ERROR WITH ORDER: " + lastValue.toString() + " & "
+							+ BRINIndexRow.get(colName + "Max").toString());
+				lastValue = BRINIndexRow.get(colName + "Max");
+
+			}
 
 		}
 
@@ -99,8 +137,6 @@ public class Tests {
 			app.insertIntoTable("idTest", row);
 
 		}
-
-		testIndex("idTest", "first_name");
 	}
 
 	static void insertValuesIntoTable() throws DBAppException {
@@ -122,7 +158,6 @@ public class Tests {
 		columns.put("id", "java.lang.Integer");
 		columns.put("name", "java.lang.String");
 		app.createTable("mockTable", "id", columns);
-
 	}
 
 }

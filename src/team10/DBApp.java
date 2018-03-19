@@ -56,7 +56,7 @@ public class DBApp {
 
 		while (line != null) {
 			String[] content = line.split(",");
-
+			
 			if (content[0].equals(strTableName)) {
 				data.add(content);
 				ColNameType.put(content[1], content[2]);
@@ -101,7 +101,7 @@ public class DBApp {
 		int[] tempPositionToInsertAt = { positionToInsertAt[0], positionToInsertAt[1] };
 
 		try {
-			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue);
+			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue, true);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

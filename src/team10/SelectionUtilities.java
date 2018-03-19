@@ -13,7 +13,7 @@ public class SelectionUtilities {
 	protected static boolean brinEntrySatisfiesConditions(Object brinMax, Object brinMin, Object[] arguments,
 			String[] operators) {
 		
-		return true;
+		return true; //to be changed
 	}
 
 	// loads the contents of all the pages of the BRIN index into an array list

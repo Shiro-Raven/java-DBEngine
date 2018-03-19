@@ -57,5 +57,19 @@ public class PageManager {
 		p.load(fileReader);
 		return Integer.parseInt(p.getProperty("BRINSize"));
 	}
+	
+	static Page loadPageIfExists(String filepath) {
+
+		try {
+
+			return PageManager.deserializePage(filepath);
+
+		} catch (Exception e) {
+
+			return null;
+
+		}
+
+	}
 
 }

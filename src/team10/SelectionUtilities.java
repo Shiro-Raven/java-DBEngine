@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.Iterator;
 
 public class SelectionUtilities {
 
@@ -140,6 +140,46 @@ public class SelectionUtilities {
 		}
 
 		return indexedColumns;
+	}
+
+	public Iterator selectFromTable(String strTableName, String strColumnName, Object[] objarrValues,
+			String[] strarrOperators) throws DBAppException {
+
+		ArrayList<Object> output = new ArrayList<Object>();
+		int tablePageNumber = 1;
+
+		while (true) {
+
+			Page page = PageManager.loadPageIfExists("data/" + strTableName + "/page_" + tablePageNumber++ + ".ser");
+
+			if (page == null)
+				break;
+
+			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++);
+				
+
+		}
+
+		return output.iterator();
+
+	}
+
+	protected static boolean isValueInResultSet(Object columnValue, Object[] objarrValues, String[] strarrOperators)
+			throws DBAppException {
+		
+		return isValueInResultSet(columnValue, objarrValues, strarrOperators, 0);
+
+	}
+
+	protected static boolean isValueInResultSet(Object columnValue, Object[] objarrValues, String[] strarrOperators,
+			int index) throws DBAppException {
+
+		if (index == objarrValues.length)
+			return true;
+		else
+			return compareColumnToArgumentUsingOperator(columnValue, objarrValues[index], strarrOperators[index])
+					&& isValueInResultSet(columnValue, objarrValues, strarrOperators, ++index);
+
 	}
 
 }

@@ -11,9 +11,38 @@ public class SelectionUtilities {
 
 	// checks if the range in a BRIN index entry satisfies the query conditions
 	protected static boolean brinEntrySatisfiesConditions(Object brinMax, Object brinMin, Object[] arguments,
-			String[] operators) {
-		
-		return true; //to be changed
+			String[] operators) throws DBAppException {
+
+		for (int i = 0; i < operators.length; i++) {
+
+			switch (operators[i]) {
+			case "<":
+				if (!compareColumnToArgumentUsingOperator(brinMin, arguments[i], "<")) {
+					return false;
+				}
+				break;
+
+			case ">":
+				if (!compareColumnToArgumentUsingOperator(brinMax, arguments[i], ">")) {
+					return false;
+				}
+				break;
+
+			case "<=":
+				if (compareColumnToArgumentUsingOperator(brinMin, arguments[i], ">")) {
+					return false;
+				}
+				break;
+
+			case ">=":
+				if (compareColumnToArgumentUsingOperator(brinMax, arguments[i], "<")) {
+					return false;
+				}
+				break;
+			}
+		}
+
+		return true;
 	}
 
 	// loads the contents of all the pages of the BRIN index into an array list
@@ -26,12 +55,13 @@ public class SelectionUtilities {
 		int pageCounter = 1;
 
 		while (true) {
-			try {
-				brinPages.add(PageManager.deserializePage(brinIndexPath + "page_" + pageCounter + ".ser"));
+			Page currentPage = PageManager.loadPageIfExists(brinIndexPath + "page_" + pageCounter + ".ser");
 
-			} catch (IOException | ClassNotFoundException e) {
+			if (currentPage == null)
 				break;
-			}
+
+			brinPages.add(currentPage);
+
 			pageCounter++;
 		}
 

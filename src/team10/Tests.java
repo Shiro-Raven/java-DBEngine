@@ -100,8 +100,8 @@ public class Tests {
 
 		}
 
-		// IndexUtilities.createDenseIndex("idTest", "first_name");
-		// testIndex("idTest", "first_name");
+		IndexUtilities.createDenseIndex("idTest", "first_name");
+		testIndex("idTest", "first_name");
 
 	}
 

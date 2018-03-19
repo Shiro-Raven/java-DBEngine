@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,18 +71,14 @@ public class IndexUtilities {
 	}
 
 	// Creates dense index of the given column in the given table
-	protected static void createDenseIndex(String strTableName, String strColumnName)
-			throws Exception {
-
-		// TODO: strColumnName IS TOTALLY USELESS SINCE WE ARE MAKING DENSE INDEX FOR
-		// ALL COLUMNS
-		// TODO: Setting .csv file to be indexed true
+	protected static void createDenseIndex(String strTableName, String strColumnName) throws Exception {
 
 		int tablePageNumber = 1;
 		String tempDirName = "Temp";
 
 		moveTuplesToDir(strTableName, tempDirName);
 		new File("data/" + strTableName + "/" + strColumnName + "/indices/Dense/").mkdirs();
+		setColumnIndexed(strTableName, strColumnName);
 
 		while (true) {
 
@@ -131,7 +128,31 @@ public class IndexUtilities {
 
 	}
 
-	@SuppressWarnings("unused")
+	protected static void setColumnIndexed(String strTableName, String strColName) throws IOException {
+
+		String csvFullText = "";
+		String line = null;
+		BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
+		
+		while ((line = br.readLine()) != null) {
+			String[] content = line.split(",");
+
+			if (content[0].equals(strTableName) && content[1].equals(strColName))
+				csvFullText += content[0] + "," + content[1] + "," + content[2] + "," + content[3] + "," + "true"
+						+ "\n";
+			else
+				csvFullText += line;
+
+			PrintWriter writer = new PrintWriter("data/metadata.csv");
+			writer.print(csvFullText);
+			writer.close();
+
+		}
+
+		br.close();
+
+	}
+
 	protected static void updateBRINIndexOnPK(String tableName, String columnName, int changedPageNumber)
 			throws ClassNotFoundException, IOException, DBAppException {
 		File currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
@@ -842,7 +863,8 @@ public class IndexUtilities {
 		}
 	}
 
-	protected static void altInsertion(String strTableName, Hashtable<String, Object> htblColNameValue, boolean isNew) throws Exception {
+	protected static void altInsertion(String strTableName, Hashtable<String, Object> htblColNameValue, boolean isNew)
+			throws Exception {
 		String line = null;
 		BufferedReader br = null;
 		try {

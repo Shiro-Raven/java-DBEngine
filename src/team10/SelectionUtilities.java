@@ -109,13 +109,15 @@ public class SelectionUtilities {
 			Page brinPage = PageManager.loadPageIfExists(brinIndexPath + "page_" + brinPageNumber + ".ser");
 			if (brinPage == null)
 				break;
-			for (int i = 0; i < brinPage.getRows().length; i++) {
+			for (int i = 0; i < brinPage.getRows().length && brinPage.getRows()[i] != null; i++) {
 				Hashtable<String, Object> currentRow = brinPage.getRows()[i];
+
 				if (brinEntrySatisfiesConditions(currentRow.get(columnName + "Max"), currentRow.get(columnName + "Min"),
 						arguments, operators) && !((boolean) currentRow.get("isDeleted"))) {
 					satisfyingPageNumbers.add((Integer) currentRow.get("pageNumber"));
 				}
 			}
+
 			brinPageNumber++;
 		}
 

@@ -14,6 +14,7 @@ public class DBAppException extends Exception {
 	
 	public DBAppException(String e)
 	{
-		System.out.println("Error! "+ e);
+		super("Error!"+e);
+		//System.out.println("Error! "+ e);
 	}
 }

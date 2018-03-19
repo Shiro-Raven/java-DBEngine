@@ -73,7 +73,7 @@ public class IndexUtilities {
 	protected static void createDenseIndex(String strTableName, String strColumnName) {
 
 	}
-
+	@SuppressWarnings("unused")
 	protected static void updateBRINIndexOnPK(String tableName, String columnName, int changedPageNumber)
 			throws ClassNotFoundException, IOException, DBAppException {
 		File currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");

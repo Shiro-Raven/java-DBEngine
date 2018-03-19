@@ -9,21 +9,46 @@ import java.util.Iterator;
 
 public class SelectionUtilities {
 
+	// checks if the arguments are of the same type as the table's column
+	protected static boolean areValidArguments(Object[] arguments, String columnType) {
+		for (int i = 0; i < arguments.length; i++) {
+			if (!(arguments[i].getClass().toString().substring(6)).equals(columnType))
+				return false;
+		}
+		return true;
+	}
+
 	// the main method for the select functionality
 	// according to the column we select on, whether it is the primary key, and
 	// whether it is indexed, the path of execution is chosen
 	protected static Iterator<Hashtable<String, Object>> selectFromTableHelper(String tableName, String columnName,
 			Object[] arguments, String[] operators) throws DBAppException {
 
-		/**
-		 * TODO defensive checks to ensure table exists and column exists
-		 */
+		// check if table and column exist
+		String columnMetaDataLine = IndexUtilities.retrieveColumnMetaInTable(tableName, columnName);
 
-		// there are no conditions passed, return everything
+		if (columnMetaDataLine == null)
+			throw new DBAppException("The table or column you entered does not exist.");
+
+		// check if all arguments are valid
+		String[] columnMetaData = columnMetaDataLine.split(",");
+
+		String columnType = columnMetaData[2];
+
+		if (!areValidArguments(arguments, columnType)) {
+			throw new DBAppException("The values you entered for comparison did not match with the column's type.");
+		}
+
+		// incorrect conditions
+		if (arguments.length != operators.length)
+			throw new DBAppException("The number of operators does not match the number of arguments.");
+
+		// there are no conditions; return everything
 		if (operators.length == 0) {
 			return selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
 		}
 
+		// there are conditions
 		String primaryKey = getPrimaryKeyColumnName(tableName);
 
 		ArrayList<String> indexedColumns = getIndexedColumns(tableName);
@@ -84,13 +109,15 @@ public class SelectionUtilities {
 			Page brinPage = PageManager.loadPageIfExists(brinIndexPath + "page_" + brinPageNumber + ".ser");
 			if (brinPage == null)
 				break;
-			for (int i = 0; i < brinPage.getRows().length; i++) {
+			for (int i = 0; i < brinPage.getRows().length && brinPage.getRows()[i] != null; i++) {
 				Hashtable<String, Object> currentRow = brinPage.getRows()[i];
+
 				if (brinEntrySatisfiesConditions(currentRow.get(columnName + "Max"), currentRow.get(columnName + "Min"),
 						arguments, operators) && !((boolean) currentRow.get("isDeleted"))) {
 					satisfyingPageNumbers.add((Integer) currentRow.get("pageNumber"));
 				}
 			}
+
 			brinPageNumber++;
 		}
 

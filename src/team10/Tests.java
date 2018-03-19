@@ -78,10 +78,10 @@ public class Tests {
 		Random ranInt = new Random(Integer.MAX_VALUE);
 		RandomString ranStr = new RandomString(8);
 
-//		Hashtable<String, String> hRow = new Hashtable<>();
-//		hRow.put("id", Integer.class.getName());
-//		hRow.put("first_name", String.class.getName());
-//		app.createTable("idTest", "id", hRow);
+		Hashtable<String, String> hRow = new Hashtable<>();
+		hRow.put("id", Integer.class.getName());
+		hRow.put("first_name", String.class.getName());
+		app.createTable("idTest", "id", hRow);
 
 		for (int i = 0; i < 200; i++) {
 
@@ -96,12 +96,12 @@ public class Tests {
 			row.put("id", id);
 			row.put("first_name", ranStr.nextString());
 
-			app.insertIntoTable("idTest", row, true);
+			app.insertIntoTable("idTest", row);
 
 		}
 
 		// IndexUtilities.createDenseIndex("idTest", "first_name");
-		testIndex("idTest", "first_name");
+		// testIndex("idTest", "first_name");
 
 	}
 

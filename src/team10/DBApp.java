@@ -39,7 +39,7 @@ public class DBApp {
 		System.out.println("Table Created!");
 	}
 
-	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue, boolean isNew) throws DBAppException {
+	public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 		String line = null;
 		BufferedReader br = null;
 		try {
@@ -101,7 +101,7 @@ public class DBApp {
 		int[] tempPositionToInsertAt = { positionToInsertAt[0], positionToInsertAt[1] };
 
 		try {
-			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue, isNew);
+			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue, true);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -219,7 +219,7 @@ public class DBApp {
 								PageManager.serializePage(currentPage,
 										"data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
 								// re-insert it to keep table sorted
-								insertIntoTable(strTableName, newTuple, true);
+								insertIntoTable(strTableName, newTuple);
 								done = true;
 								break;
 							} else {

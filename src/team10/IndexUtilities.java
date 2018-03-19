@@ -71,37 +71,38 @@ public class IndexUtilities {
 
 	// Creates dense index of the given column in the given table
 	protected static void createDenseIndex(String strTableName, String strColumnName)
-			throws IOException, DBAppException {
-		
-		// TODO: strColumnName IS TOTALLY USELESS SINCE WE ARE MAKING DENSE INDEX FOR ALL COLUMNS
+			throws Exception {
+
+		// TODO: strColumnName IS TOTALLY USELESS SINCE WE ARE MAKING DENSE INDEX FOR
+		// ALL COLUMNS
 		// TODO: Setting .csv file to be indexed true
 
-		DBApp app = new DBApp();
 		int tablePageNumber = 1;
 		String tempDirName = "Temp";
 
 		moveTuplesToDir(strTableName, tempDirName);
+		new File("data/" + strTableName + "/" + strColumnName + "/indices/Dense/").mkdirs();
 
 		while (true) {
 
 			Page tablePage;
 
 			try {
-				
+
 				tablePage = PageManager.deserializePage(
 						"data/" + strTableName + "/" + tempDirName + "/page_" + tablePageNumber++ + ".ser");
-			
+
 			} catch (ClassNotFoundException | IOException e) {
-			
+
 				System.out.println("Dense Creation Is Done!");
 				new File("data/" + strTableName + "/" + tempDirName + "/").delete();
 				return;
-			
+
 			}
 
 			for (Hashtable<String, Object> tuple : tablePage.getRows())
 				if (tuple != null)
-					app.insertIntoTable(strTableName, tuple, false);
+					altInsertion(strTableName, tuple, false);
 
 		}
 
@@ -298,9 +299,10 @@ public class IndexUtilities {
 				}
 			}
 		} catch (NullPointerException e) {
-			/* in case the you read a null value, that means
-			 * that the page has empty records and no more values are in it.
-			*/
+			/*
+			 * in case the you read a null value, that means that the page has empty records
+			 * and no more values are in it.
+			 */
 			Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
 			return minAndMaxValues;
 		}
@@ -838,6 +840,108 @@ public class IndexUtilities {
 		} else {
 			return new int[] { pageNumber, rowNumber + 1 };
 		}
+	}
+
+	protected static void altInsertion(String strTableName, Hashtable<String, Object> htblColNameValue, boolean isNew) throws Exception {
+		String line = null;
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader("data/metadata.csv"));
+			line = br.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		ArrayList<String[]> data = new ArrayList<>();
+		String primaryKey = null;
+		ArrayList<String> indexedColumns = new ArrayList<>();
+		Hashtable<String, String> ColNameType = new Hashtable<>();
+
+		while (line != null) {
+			String[] content = line.split(",");
+
+			if (content[0].equals(strTableName)) {
+				data.add(content);
+				ColNameType.put(content[1], content[2]);
+				if ((content[3].toLowerCase()).equals("true"))
+					primaryKey = content[1];
+				if (content[4].toLowerCase().equals("true"))
+					indexedColumns.add(content[1]);
+			}
+			try {
+				line = br.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		try {
+			br.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (data.isEmpty())
+			throw new DBAppException("404 Table Not Found !");
+
+		if (htblColNameValue.get(primaryKey).equals(null))
+			throw new DBAppException("Primary Key Can NOT be null");
+
+		if (!InsertionUtilities.isValidTuple(ColNameType, htblColNameValue))
+			throw new DBAppException(
+					"The tuple you're trying to insert into table " + strTableName + " is not a valid tuple!");
+
+		int[] positionToInsertAt;
+		if (indexedColumns.contains(primaryKey)) {
+			positionToInsertAt = InsertionUtilities.searchForInsertionPositionIndexed(strTableName, primaryKey,
+					htblColNameValue);
+		} else {
+			positionToInsertAt = InsertionUtilities.searchForInsertionPosition(strTableName, primaryKey,
+					htblColNameValue);
+		}
+		// for some reason, Maq's insertTuple modifies the positionToInsertAt.
+		// Therefore, this local array is needed
+		int[] tempPositionToInsertAt = { positionToInsertAt[0], positionToInsertAt[1] };
+
+		try {
+			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue, false);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		ArrayList<Integer> changedPagesAfterDenseIndexUpdate = new ArrayList<Integer>();
+
+		for (int i = 0; i < indexedColumns.size(); i++) {
+			if (!indexedColumns.get(i).equals(primaryKey)) {
+				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
+						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
+						htblColNameValue.get(indexedColumns.get(i)));
+				try {
+					IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i),
+							changedPagesAfterDenseIndexUpdate);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				try {
+					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+		/** TODO update the BRIN index after insertion **/
+
+		System.out.println("Tuple Inserted!");
+		System.out.println(
+				"Changed Dense Index Page Numbers at the end: " + changedPagesAfterDenseIndexUpdate.toString());
+
 	}
 
 }

@@ -270,7 +270,7 @@ public class DBApp {
 			// Then update their dense indices
 			if (indexedColumns.contains(PKeyName))
 				indexedColumns.remove(PKeyName);
-			UpdateUtilities.updateDenseIndex(strKey, newValues, oldValues, tblPageNum, tupleRowNum);
+			UpdateUtilities.updateDenseIndex(strTableName, newValues, oldValues, tblPageNum, tupleRowNum);
 		}
 
 		System.out.println("Update made successfully!");

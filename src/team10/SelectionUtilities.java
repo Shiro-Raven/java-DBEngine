@@ -250,4 +250,29 @@ public class SelectionUtilities {
 
 	}
 
+	// Selects From Non-Indexed Column
+	protected static Iterator<Hashtable<String, Object>> primaryKeyIndexedRetrieval(String strTableName,
+			String strColumnName, Object[] objarrValues, String[] strarrOperators, ArrayList<Integer> tablePageNumbers)
+			throws DBAppException {
+
+		ArrayList<Hashtable<String, Object>> output = new ArrayList<Hashtable<String, Object>>();
+
+		for (int tablePageNumber : tablePageNumbers) {
+
+			Page page = PageManager.loadPageIfExists("data/" + strTableName + "/page_" + tablePageNumber + ".ser");
+
+			if (page == null)
+				break;
+
+			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++)
+				if (isValueInResultSet(page.getRows()[i].get(strColumnName), objarrValues, strarrOperators)
+						&& ((boolean) page.getRows()[i].get("isDeleted") == false))
+					output.add(page.getRows()[i]);
+
+		}
+
+		return output.iterator();
+
+	}
+
 }

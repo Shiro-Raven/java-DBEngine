@@ -96,9 +96,14 @@ public class IndexUtilities {
 			}
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
 			int locOfTablePageRecordInBRIN = retrieveLocOfPageRecordInBRIN(changedPageNumber - 1);
+			if (BRINRecords[locOfTablePageRecordInBRIN] == null) {
+				BRINRecords[locOfTablePageRecordInBRIN] = new Hashtable<String, Object>();
+			}
 			updateBRINRecord(columnName, BRINRecords[locOfTablePageRecordInBRIN], minAndMaxInCurrentTablePage,
 					changedPageNumber);
 			updateDeletedFlagOnBRINRecord(BRINRecords[locOfTablePageRecordInBRIN], currentTablePage);
+			PageManager.serializePage(BRINIndexPage,
+					"data/" + tableName + "/" + columnName + "/indices/BRIN/page_" + currentBRINPageLoc + ".ser");
 			changedPageNumber++;
 			currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
 		}

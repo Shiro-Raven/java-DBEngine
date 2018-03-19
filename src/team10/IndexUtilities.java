@@ -66,11 +66,17 @@ public class IndexUtilities {
 
 	// BRIN index business logic for now
 	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary)
-			throws DBAppException {
+			throws Exception {
 		if (!isPrimary) {
 			makeIndexDirectory(strTableName, strColumnName, "Dense");
 		}
 		makeIndexDirectory(strTableName, strColumnName, "BRIN");
+		createDenseIndex(strTableName, strColumnName);
+		if (isPrimary) {
+			updateBRINIndexOnPK(strTableName, strColumnName, 1);
+		} else {
+			updateBRINIndexOnDense(strTableName, strColumnName,retrieveAllPageNumbers("data/"+strTableName+"/"+strColumnName+"/indices/Dense"));
+		}
 	}
 
 	// Creates dense index of the given column in the given table
@@ -372,21 +378,21 @@ public class IndexUtilities {
 	// Throws a DBAppException in case the page does not exist
 
 	// Retrieve all pages in a given path
-	protected static ArrayList<Page> retrieveAllPages(String filepath) throws IOException, ClassNotFoundException {
-
+	protected static ArrayList<Integer> retrieveAllPageNumbers(String filepath) throws IOException, ClassNotFoundException {
+		ArrayList<Integer> pageNumbers = new ArrayList<Integer>();
 		IndexUtilities.validateDirectory(filepath);
 		ArrayList<Page> pages = new ArrayList<Page>();
-		File files = new File(filepath);
+		File dir = new File(filepath);
 
-		for (File file : files.listFiles()) {
+		for (File file : dir.listFiles()) {
 
 			String name = file.getName();
-			if (name.substring(0, 6).equals("dense_") && name.substring(name.indexOf('.')).equals(".ser"))
-				pages.add(PageManager.deserializePage(file.getPath()));
+			if (name.substring(0, 5).equals("page_") && name.substring(name.indexOf('.')).equals(".ser"))
+				pageNumbers.add(Integer.parseInt(name.charAt(5)+""));
 
 		}
 
-		return pages;
+		return pageNumbers;
 
 	}
 

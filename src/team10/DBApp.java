@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
+import java.util.Iterator;
 import java.util.Set;
 
 public class DBApp {
@@ -102,7 +103,7 @@ public class DBApp {
 		int[] tempPositionToInsertAt = { positionToInsertAt[0], positionToInsertAt[1] };
 
 		try {
-			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue);
+			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue, true);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -110,10 +111,28 @@ public class DBApp {
 		ArrayList<Integer> changedPagesAfterDenseIndexUpdate = new ArrayList<Integer>();
 
 		for (int i = 0; i < indexedColumns.size(); i++) {
-			if (!indexedColumns.get(i).equals(primaryKey))
+			if (!indexedColumns.get(i).equals(primaryKey)) {
 				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
 						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 						htblColNameValue.get(indexedColumns.get(i)));
+				try {
+					IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i),
+							changedPagesAfterDenseIndexUpdate);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				try {
+					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
 		}
 
 		/** TODO update the BRIN index after insertion **/
@@ -300,8 +319,17 @@ public class DBApp {
 
 	}
 
-	public void createBRINIndex(String strTableName, String strColumnName) throws DBAppException {
-
+	public void createBRINIndex(String strTableName, String strColumnName) throws Exception {
+		if (!IndexUtilities.tableDirectoryExists(strTableName))
+			throw new DBAppException("This table does not exist");
+		String columnMeta = IndexUtilities.retrieveColumnMetaInTable(strTableName, strColumnName);
+		boolean isColumnPrimary = IndexUtilities.isColumnPrimary(columnMeta);
+		IndexUtilities.createBRINFiles(strTableName, strColumnName, isColumnPrimary);
 	}
 
+	@SuppressWarnings("rawtypes")
+	public Iterator selectFromTable(String strTableName, String strColumnName, Object[] objarrValues,
+			String[] strarrOperators) throws DBAppException {
+		return SelectionUtilities.selectFromTableHelper(strTableName, strColumnName, objarrValues, strarrOperators);
+	}
 }

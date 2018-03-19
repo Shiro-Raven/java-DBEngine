@@ -5,7 +5,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Hashtable;
 
 public class IndexUtilities {
@@ -23,7 +28,7 @@ public class IndexUtilities {
 	// not
 	protected static boolean isColumnPrimary(String columnMeta) throws DBAppException {
 		if (columnMeta == null) {
-			throw new DBAppException("meta data retreival error");
+			throw new DBAppException("meta data retrieval error");
 		}
 		String[] columnParams = columnMeta.split(",");
 		if (columnParams[3].equals("true")) {
@@ -58,24 +63,211 @@ public class IndexUtilities {
 	}
 
 	// BRIN index business logic for now
-	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary) {
-
+	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary)
+			throws Exception {
+		if (!isPrimary) {
+			makeIndexDirectory(strTableName, strColumnName, "Dense");
+			createDenseIndex(strTableName, strColumnName);
+		}
+		makeIndexDirectory(strTableName, strColumnName, "BRIN");
+		if (isPrimary) {
+			updateBRINIndexOnPK(strTableName, strColumnName, 1);
+		} else {
+			updateBRINIndexOnDense(strTableName, strColumnName,retrieveAllPageNumbers("data/"+strTableName+"/"+strColumnName+"/indices/Dense"));
+		}
 	}
 
 	// Creates dense index of the given column in the given table
-	protected static void createDenseIndex(String strTableName, String strColumnName) {
+	protected static void createDenseIndex(String strTableName, String strColumnName) throws Exception {
+		int tablePageNumber = 1;
+		String tempDirName = "Temp";
+
+		Path tmpDirPath = moveTuplesToDir(strTableName);
+		new File("data/" + strTableName + "/" + strColumnName + "/indices/Dense/").mkdirs();
+		setColumnIndexed(strTableName, strColumnName);
+
+		while (true) {
+
+			Page tablePage;
+
+			try {
+
+				tablePage = PageManager.deserializePage(tmpDirPath.toString() + "page_" + tablePageNumber++ + ".ser");
+
+			} catch (ClassNotFoundException | IOException e) {
+
+				System.out.println("Dense Creation Is Done!");
+				new File("data/" + strTableName + "/" + tempDirName + "/").delete();
+				return;
+
+			}
+
+			for (Hashtable<String, Object> tuple : tablePage.getRows())
+				if (tuple != null)
+					altInsertion(strTableName, tuple, false);
+
+		}
 
 	}
 
-	protected static void updateBRINIndex(ArrayList<Object> denseIndexChangesInfo) {
+	protected static Path moveTuplesToDir(String strTableName) throws IOException {
+
+		// TODO: Check if table exists
+
+		File tableDir = new File("data/" + strTableName + "/");
+		Path tmpDirPath = Files.createTempDirectory("DBAppTeam10-");
+
+		for (File file : tableDir.listFiles())
+			if (!file.isDirectory() && file.getName().endsWith(".ser")) {
+				file.renameTo(new File(tmpDirPath.toString() + file.getName()));
+				file.delete();
+			}
+
+		return tmpDirPath;
 
 	}
 
-	// Get a page based on the containing directory path
-	// Throws a DBAppException in case the file path does not point to a
-	// directory
-	// Throws a DBAppException in case the page does not exist
-	protected static Page retreivePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
+	protected static void setColumnIndexed(String strTableName, String strColName) throws IOException {
+
+		String csvFullText = "";
+		String line = null;
+		BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
+
+		while ((line = br.readLine()) != null) {
+			String[] content = line.split(",");
+
+			if (content[0].equals(strTableName) && content[1].equals(strColName))
+				csvFullText += content[0] + "," + content[1] + "," + content[2] + "," + content[3] + "," + "true"
+						+ "\n";
+			else
+				csvFullText += line + "\n";
+
+			PrintWriter writer = new PrintWriter("data/metadata.csv");
+			writer.print(csvFullText);
+			writer.close();
+
+		}
+
+		br.close();
+
+	}
+
+	protected static void updateBRINIndexOnPK(String tableName, String columnName, int changedPageNumber)
+			throws ClassNotFoundException, IOException, DBAppException {
+		File currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
+		while (currentTablePageFile.exists()) {
+			int currentBRINPageLoc = ((changedPageNumber - 1) / PageManager.getBRINSize()) + 1;
+			Page currentTablePage = PageManager.deserializePage(currentTablePageFile.getPath());
+			Object[] minAndMaxInCurrentTablePage = retrieveMinAndMaxInPage(currentTablePage, false, columnName);
+			Page BRINIndexPage = null;
+			try {
+				// in case the BRIN index page exists retrieve it
+				BRINIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/BRIN",
+						currentBRINPageLoc);
+			} catch (DBAppException e) {
+				// if it does not exists create a new page
+				if (e.getMessage().equals("Error!The page file does not exist")) {
+					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
+				} else {
+					throw new DBAppException("cannot process BRIN index page");
+				}
+			}
+			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
+			int locOfTablePageRecordInBRIN = retrieveLocOfPageRecordInBRIN(changedPageNumber - 1);
+			if (BRINRecords[locOfTablePageRecordInBRIN] == null) {
+				BRINRecords[locOfTablePageRecordInBRIN] = new Hashtable<String, Object>();
+			}
+			updateBRINRecord(columnName, BRINRecords[locOfTablePageRecordInBRIN], minAndMaxInCurrentTablePage,
+					changedPageNumber);
+			updateDeletedFlagOnBRINRecord(BRINRecords[locOfTablePageRecordInBRIN], currentTablePage);
+			PageManager.serializePage(BRINIndexPage,
+					"data/" + tableName + "/" + columnName + "/indices/BRIN/page_" + currentBRINPageLoc + ".ser");
+			changedPageNumber++;
+			currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
+		}
+	}
+
+	protected static void updateBRINIndexOnDense(String tableName, String columnName,
+			ArrayList<Integer> changedDenseIndexPages) throws DBAppException, IOException {
+		for (int i = 0; i < changedDenseIndexPages.size(); i++) {
+
+			// get the target dense index page to update the BRIN
+
+			int currentDensePageLoc = (int) (changedDenseIndexPages.get(i)) - 1;
+
+			// calculate the number of the BRIN page contaning the dense index page info
+			int currentBRINPageLoc = (currentDensePageLoc / PageManager.getBRINSize()) + 1;
+			// retrieve the dense index page to be updated
+
+			Page currentDenseIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/Dense",
+					currentDensePageLoc + 1);
+			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInPage(currentDenseIndexPage, true, columnName);
+			Page BRINIndexPage = null;
+			try {
+				// in case the BRIN index page exists retrieve it
+				BRINIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/BRIN",
+						currentBRINPageLoc);
+			} catch (DBAppException e) {
+				// if it does not exists create a new page
+				if (e.getMessage().equals("Error!The page file does not exist")) {
+					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
+				} else {
+					e.printStackTrace();
+				}
+			}
+			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
+			int locOfDenseRecordInBRIN = retrieveLocOfPageRecordInBRIN(currentDensePageLoc);
+			if (BRINRecords[locOfDenseRecordInBRIN] == null) {
+				BRINRecords[locOfDenseRecordInBRIN] = new Hashtable<String, Object>();
+			}
+			updateBRINRecord(columnName, BRINRecords[locOfDenseRecordInBRIN], minAndMaxInCurrentPage,
+					currentDensePageLoc + 1);
+			updateDeletedFlagOnBRINRecord(BRINRecords[locOfDenseRecordInBRIN], currentDenseIndexPage);
+			PageManager.serializePage(BRINIndexPage,
+					"data/" + tableName + "/" + columnName + "/indices/BRIN/page_" + currentBRINPageLoc + ".ser");
+		}
+	}
+
+	// @SuppressWarnings("unchecked")
+	// protected static int addNewBRINRecord(String columnName, Page BRINIndexPage,
+	// Object[] newMinAndMaxValues) {
+	// Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
+	// ArrayList<Hashtable<String, Object>> BRINRecordList = new
+	// ArrayList<Hashtable<String, Object>>(
+	// Arrays.asList(BRINRecords));
+	// Hashtable<String, Object> newRecord = new Hashtable<String, Object>();
+	// updateBRINRecord(columnName, newRecord, newMinAndMaxValues);
+	// BRINRecordList.add(newRecord);
+	// Collections.sort(BRINRecordList, getBRINIndexComparator());
+	// int locOfNewRecord = BRINRecordList.indexOf(newRecord);
+	// BRINRecords = (Hashtable<String, Object>[]) BRINRecordList.toArray();
+	// BRINIndexPage.setRows(BRINRecords);
+	// return locOfNewRecord;
+	// }
+
+	protected static void updateBRINRecord(String columnName, Hashtable<String, Object> BRINRecord,
+			Object[] newMinAndMaxValues, int densePageLoc) {
+		BRINRecord.put(columnName + "Min", newMinAndMaxValues[0]);
+		BRINRecord.put(columnName + "Max", newMinAndMaxValues[1]);
+		BRINRecord.put("pageNumber", densePageLoc);
+	}
+
+	protected static void updateDeletedFlagOnBRINRecord(Hashtable<String, Object> BRINRecord, Page denseIndexPage) {
+		Hashtable<String, Object>[] denseIndexPageRecords = denseIndexPage.getRows();
+		for (int i = 0; i < denseIndexPageRecords.length; i++) {
+			if (!((boolean) (denseIndexPageRecords[i].get("isDeleted")))) {
+				BRINRecord.put("isDeleted", false);
+				return;
+			}
+		}
+		BRINRecord.put("isDeleted", true);
+
+	}
+
+	protected static Page retrievePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
+		// Get a page based on the containing directory path
+		// Throws a DBAppException in case the file path does not point to a directory
+		// Throws a DBAppException in case the page does not exist
 		File pageDirectory = new File(pageDirectoryPath);
 		if (!pageDirectory.exists()) {
 			throw new DBAppException("The file path supplied does not exist");
@@ -83,7 +275,7 @@ public class IndexUtilities {
 		if (!pageDirectory.isDirectory()) {
 			throw new DBAppException("The file path supplied to retrieve the page is not a directory");
 		}
-		File pageFile = new File(pageDirectoryPath + "page_" + pageNumber + ".ser");
+		File pageFile = new File(pageDirectoryPath + "/page_" + pageNumber + ".ser");
 		if (!pageFile.exists()) {
 			throw new DBAppException("The page file does not exist");
 		}
@@ -98,22 +290,106 @@ public class IndexUtilities {
 
 	}
 
-	// Retrieve all pages in a given path
-	protected static ArrayList<Page> retreiveAllPages(String filepath) throws IOException, ClassNotFoundException {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected static Object[] retrieveMinAndMaxInPage(Page targetPage, boolean isIndex, String columnName) {
+		Hashtable<String, Object>[] pageRows = targetPage.getRows();
+		Comparable minValueInPage = null;
+		Comparable maxValueInPage = null;
+		if (isIndex) {
+			minValueInPage = (Comparable) pageRows[0].get("value");
+			maxValueInPage = (Comparable) pageRows[0].get("value");
 
+		} else {
+			minValueInPage = (Comparable) pageRows[0].get(columnName);
+			maxValueInPage = (Comparable) pageRows[0].get(columnName);
+		}
+		try {
+			for (int i = 0; i < pageRows.length; i++) {
+				Hashtable<String, Object> currentRecord = pageRows[i];
+				Comparable currentValue = null;
+				if (isIndex) {
+					currentValue = (Comparable) currentRecord.get("value");
+				} else {
+					currentValue = (Comparable) currentRecord.get(columnName);
+				}
+				if (currentValue == null)
+					break;
+
+				if (currentValue.compareTo(minValueInPage) < 0) {
+					minValueInPage = currentValue;
+				} else if (currentValue.compareTo(maxValueInPage) > 0) {
+					maxValueInPage = currentValue;
+				}
+			}
+		} catch (NullPointerException e) {
+			/*
+			 * in case the you read a null value, that means that the page has empty records
+			 * and no more values are in it.
+			 */
+			Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
+			return minAndMaxValues;
+		}
+		Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
+		return minAndMaxValues;
+
+	}
+
+	protected static Comparator<Hashtable<String, Object>> getBRINIndexComparator() {
+		return new Comparator<Hashtable<String, Object>>() {
+			public int compare(Hashtable<String, Object> record1, Hashtable<String, Object> record2) {
+				int record1PageNumber = (int) (record1.get("pageNumber"));
+				int record2PageNumber = (int) (record2.get("pageNumber"));
+				return record1PageNumber < record2PageNumber ? -1 : record1PageNumber > record2PageNumber ? 1 : 0;
+			}
+		};
+	}
+
+	protected static int retrieveLocOfPageRecordInBRIN(int DensePageNumber) throws IOException {
+		return DensePageNumber % PageManager.getBRINSize();
+	}
+
+	protected static void EraseNonExistentDenseIndexPages(String tableName, String columnName,
+			ArrayList<Integer> changedDenseIndexPages) {
+		/*
+		 * the check is only on the maximum page numbers in case a max page number does
+		 * not exist, remove it from the arraylist then recheck exists the max page
+		 * exists again for robustness once the check for existence of page passes,
+		 * break the loop
+		 */
+		do {
+			int maxPageNumber = Collections.max(changedDenseIndexPages);
+			File maxPage = new File(
+					"data/" + tableName + "/" + columnName + "/indices/Dense/page_" + maxPageNumber + ".ser");
+			if (maxPage.exists()) {
+				break;
+			} else {
+				changedDenseIndexPages.remove(maxPageNumber);
+			}
+
+		} while (changedDenseIndexPages.isEmpty());
+
+	}
+
+	// Get a page based on the containing directory path
+	// Throws a DBAppException in case the file path does not point to a directory
+	// Throws a DBAppException in case the page does not exist
+
+	// Retrieve all pages in a given path
+	protected static ArrayList<Integer> retrieveAllPageNumbers(String filepath) throws IOException, ClassNotFoundException {
+		ArrayList<Integer> pageNumbers = new ArrayList<Integer>();
 		IndexUtilities.validateDirectory(filepath);
 		ArrayList<Page> pages = new ArrayList<Page>();
-		File files = new File(filepath);
+		File dir = new File(filepath);
 
-		for (File file : files.listFiles()) {
+		for (File file : dir.listFiles()) {
 
 			String name = file.getName();
-			if (name.substring(0, 6).equals("dense_") && name.substring(name.indexOf('.')).equals(".ser"))
-				pages.add(PageManager.deserializePage(file.getPath()));
+			if (name.substring(0, 5).equals("page_") && name.substring(name.indexOf('.')).equals(".ser"))
+				pageNumbers.add(Integer.parseInt(name.charAt(5)+""));
 
 		}
 
-		return pages;
+		return pageNumbers;
 
 	}
 
@@ -139,6 +415,26 @@ public class IndexUtilities {
 
 	}
 
+	/*
+	 * make directories for the appropriate index type
+	 */
+	protected static void makeIndexDirectory(String tableName, String columnName, String indexType)
+			throws DBAppException {
+		if (indexType.equals("Dense")) {
+			File indexDir = new File("data/" + tableName + "/" + columnName + "/indices/" + "Dense");
+			if (!indexDir.exists()) {
+				indexDir.mkdirs();
+			}
+		} else if (indexType.equals("BRIN")) {
+			File indexDir = new File("data/" + tableName + "/" + columnName + "/indices/" + "BRIN");
+			if (!indexDir.exists()) {
+				indexDir.mkdirs();
+			}
+		} else {
+			throw new DBAppException("The only supported index types are dense and BRIN indices");
+		}
+	}
+
 	// revise if errors occur
 	protected static ArrayList<Integer> addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber,
 			String columnName, String tableName, Object newValue) throws DBAppException {
@@ -148,7 +444,7 @@ public class IndexUtilities {
 		newEntry.put("pageNumber", relationPageNumber);
 		newEntry.put("locInPage", relationRowNumber);
 		newEntry.put("isDeleted", false);
-		
+
 		int pageNumber = 1;
 		int targetLocation = 0;
 
@@ -402,8 +698,8 @@ public class IndexUtilities {
 				return false;
 			}
 
-			// get the next value from the first row
 			if (nextPage.getRows()[0] == null)
+				// get the next value from the first row
 				return false;
 			nextRowValue = (Comparable) nextPage.getRows()[0].get(columnName);
 		}
@@ -560,6 +856,109 @@ public class IndexUtilities {
 		} else {
 			return new int[] { pageNumber, rowNumber + 1 };
 		}
+	}
+
+	protected static void altInsertion(String strTableName, Hashtable<String, Object> htblColNameValue, boolean isNew)
+			throws Exception {
+		String line = null;
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new FileReader("data/metadata.csv"));
+			line = br.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		ArrayList<String[]> data = new ArrayList<>();
+		String primaryKey = null;
+		ArrayList<String> indexedColumns = new ArrayList<>();
+		Hashtable<String, String> ColNameType = new Hashtable<>();
+
+		while (line != null) {
+			String[] content = line.split(",");
+
+			if (content[0].equals(strTableName)) {
+				data.add(content);
+				ColNameType.put(content[1], content[2]);
+				if ((content[3].toLowerCase()).equals("true"))
+					primaryKey = content[1];
+				if (content[4].toLowerCase().equals("true"))
+					indexedColumns.add(content[1]);
+			}
+			try {
+				line = br.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		try {
+			br.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (data.isEmpty())
+			throw new DBAppException("404 Table Not Found !");
+
+		if (htblColNameValue.get(primaryKey).equals(null))
+			throw new DBAppException("Primary Key Can NOT be null");
+
+		if (!InsertionUtilities.isValidTuple(ColNameType, htblColNameValue))
+			throw new DBAppException(
+					"The tuple you're trying to insert into table " + strTableName + " is not a valid tuple!");
+
+		int[] positionToInsertAt;
+		if (indexedColumns.contains(primaryKey)) {
+			positionToInsertAt = InsertionUtilities.searchForInsertionPositionIndexed(strTableName, primaryKey,
+					htblColNameValue);
+		} else {
+			positionToInsertAt = InsertionUtilities.searchForInsertionPosition(strTableName, primaryKey,
+					htblColNameValue);
+		}
+		// for some reason, Maq's insertTuple modifies the positionToInsertAt.
+		// Therefore, this local array is needed
+		int[] tempPositionToInsertAt = { positionToInsertAt[0], positionToInsertAt[1] };
+
+		try {
+			InsertionUtilities.insertTuple(strTableName, positionToInsertAt, htblColNameValue, false);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		ArrayList<Integer> changedPagesAfterDenseIndexUpdate = new ArrayList<Integer>();
+
+		for (int i = 0; i < indexedColumns.size(); i++) {
+			if (!indexedColumns.get(i).equals(primaryKey)) {
+				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
+						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
+						htblColNameValue.get(indexedColumns.get(i)));
+				try {
+					IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i),
+							changedPagesAfterDenseIndexUpdate);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				try {
+					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+		/** TODO update the BRIN index after insertion **/
+
+		System.out.println("Tuple Inserted!");
+		System.out.println(
+				"Changed Dense Index Page Numbers at the end: " + changedPagesAfterDenseIndexUpdate.toString());
+
 	}
 
 }

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.Iterator;
 
 public class SelectionUtilities {
@@ -142,10 +143,11 @@ public class SelectionUtilities {
 		return indexedColumns;
 	}
 
-	public Iterator selectFromTable(String strTableName, String strColumnName, Object[] objarrValues,
+	// Selects From Non-Indexed Column
+	protected static Iterator<Hashtable<String, Object>> selectFromNonIndexedColumn(String strTableName, String strColumnName, Object[] objarrValues,
 			String[] strarrOperators) throws DBAppException {
 
-		ArrayList<Object> output = new ArrayList<Object>();
+		ArrayList<Hashtable<String, Object>> output = new ArrayList<Hashtable<String, Object>>();
 		int tablePageNumber = 1;
 
 		while (true) {
@@ -155,15 +157,17 @@ public class SelectionUtilities {
 			if (page == null)
 				break;
 
-			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++);
+			for (int i = 0; i < page.getMaxRows() && page.getRows()[i] != null; i++)
+				if(isValueInResultSet(page.getRows()[i].get(strColumnName), objarrValues, strarrOperators))
+					output.add(page.getRows()[i]);
 				
-
 		}
 
 		return output.iterator();
 
 	}
 
+	// Checks Whether Value Satisfies All Conditions
 	protected static boolean isValueInResultSet(Object columnValue, Object[] objarrValues, String[] strarrOperators)
 			throws DBAppException {
 		

@@ -130,6 +130,7 @@ public class IndexUtilities {
 
 	}
 
+	@SuppressWarnings("unused")
 	protected static void updateBRINIndexOnPK(String tableName, String columnName, int changedPageNumber)
 			throws ClassNotFoundException, IOException, DBAppException {
 		File currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
@@ -176,7 +177,7 @@ public class IndexUtilities {
 			// retrieve the dense index page to be updated
 
 			Page currentDenseIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/Dense",
-					currentDensePageLoc);
+					currentDensePageLoc + 1);
 			Object[] minAndMaxInCurrentPage = retrieveMinAndMaxInPage(currentDenseIndexPage, true, columnName);
 			Page BRINIndexPage = null;
 			try {
@@ -278,20 +279,30 @@ public class IndexUtilities {
 			minValueInPage = (Comparable) pageRows[0].get(columnName);
 			maxValueInPage = (Comparable) pageRows[0].get(columnName);
 		}
-		for (int i = 0; i < pageRows.length; i++) {
-			Hashtable<String, Object> currentRecord = pageRows[i];
-			Comparable currentValue = null;
-			if (isIndex) {
-				currentValue = (Comparable) currentRecord.get("value");
-			} else {
-				currentValue = (Comparable) currentRecord.get(columnName);
-			}
+		try {
+			for (int i = 0; i < pageRows.length; i++) {
+				Hashtable<String, Object> currentRecord = pageRows[i];
+				Comparable currentValue = null;
+				if (isIndex) {
+					currentValue = (Comparable) currentRecord.get("value");
+				} else {
+					currentValue = (Comparable) currentRecord.get(columnName);
+				}
+				if (currentValue == null)
+					break;
 
-			if (currentValue.compareTo(minValueInPage) < 0) {
-				minValueInPage = currentValue;
-			} else if (currentValue.compareTo(maxValueInPage) > 0) {
-				maxValueInPage = currentValue;
+				if (currentValue.compareTo(minValueInPage) < 0) {
+					minValueInPage = currentValue;
+				} else if (currentValue.compareTo(maxValueInPage) > 0) {
+					maxValueInPage = currentValue;
+				}
 			}
+		} catch (NullPointerException e) {
+			/* in case the you read a null value, that means
+			 * that the page has empty records and no more values are in it.
+			*/
+			Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
+			return minAndMaxValues;
 		}
 		Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
 		return minAndMaxValues;

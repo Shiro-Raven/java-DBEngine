@@ -314,8 +314,12 @@ public class DBApp {
 
 	}
 
-	public void createBRINIndex(String strTableName, String strColumnName) throws DBAppException {
-
+	public void createBRINIndex(String strTableName, String strColumnName) throws Exception {
+		if (!IndexUtilities.tableDirectoryExists(strTableName))
+			throw new DBAppException("This table does not exist");
+		String columnMeta = IndexUtilities.retrieveColumnMetaInTable(strTableName, strColumnName);
+		boolean isColumnPrimary = IndexUtilities.isColumnPrimary(columnMeta);
+		IndexUtilities.createBRINFiles(strTableName, strColumnName, isColumnPrimary);
 	}
 
 	@SuppressWarnings("rawtypes")

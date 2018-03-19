@@ -14,7 +14,6 @@ public class SelectionUtilities {
 	// whether it is indexed, the path of execution is chosen
 	protected static Iterator<Hashtable<String, Object>> selectFromTableHelper(String tableName, String columnName,
 			Object[] arguments, String[] operators) throws DBAppException {
-		ArrayList<Hashtable<String, Object>> output = new ArrayList<Hashtable<String, Object>>();
 
 		/**
 		 * TODO defensive checks to ensure table exists and column exists
@@ -27,18 +26,42 @@ public class SelectionUtilities {
 		if (columnName.equals(primaryKey)) {
 			if (indexedColumns.contains(columnName)) {
 				// indexed and primary key
+				return selectByPrimaryKeyIndexed(tableName, columnName, arguments, operators);
 			} else {
 				// primary key only
+				return SelectionUtilities.selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
 			}
 		} else {
 			if (indexedColumns.contains(columnName)) {
 				// indexed and not primary key
+				return selectByNonPrimaryKeyIndexed(tableName, columnName, arguments, operators);
 			} else {
 				// not primary key and not indexed
+				return SelectionUtilities.selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
 			}
 		}
+	}
 
-		return output.iterator();
+	// handles selection for primary key indexed case
+	protected static Iterator<Hashtable<String, Object>> selectByPrimaryKeyIndexed(String tableName, String columnName,
+			Object[] arguments, String[] operators) throws DBAppException {
+
+		ArrayList<Integer> satisfyingTablePages = getSatisfyingPagesFromBrinIndex(tableName, columnName, arguments,
+				operators);
+
+		return SelectionUtilities.primaryKeyIndexedRetrieval(tableName, columnName, arguments, operators,
+				satisfyingTablePages);
+	}
+
+	// handles selection for non-primary key indexed case
+	protected static Iterator<Hashtable<String, Object>> selectByNonPrimaryKeyIndexed(String tableName,
+			String columnName, Object[] arguments, String[] operators) throws DBAppException {
+
+		ArrayList<Integer> satisfyingTablePages = getSatisfyingPagesFromBrinIndex(tableName, columnName, arguments,
+				operators);
+
+		return denseIndexRetrieval(tableName, columnName, arguments, operators, satisfyingTablePages);
+
 	}
 
 	// searches the BRIN index and returns the numbers of the pages that
@@ -103,29 +126,6 @@ public class SelectionUtilities {
 		}
 
 		return true;
-	}
-
-	// loads the contents of all the pages of the BRIN index into an array list
-	// and returns it
-	protected static ArrayList<Page> loadAllBrinPages(String tableName, String columnName) {
-		ArrayList<Page> brinPages = new ArrayList<Page>();
-
-		String brinIndexPath = "data/" + tableName + "/" + columnName + "indices/BRIN/";
-
-		int pageCounter = 1;
-
-		while (true) {
-			Page currentPage = PageManager.loadPageIfExists(brinIndexPath + "page_" + pageCounter + ".ser");
-
-			if (currentPage == null)
-				break;
-
-			brinPages.add(currentPage);
-
-			pageCounter++;
-		}
-
-		return brinPages;
 	}
 
 	// compares a column's value to an argument using an operator

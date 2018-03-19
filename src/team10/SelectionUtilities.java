@@ -19,6 +19,11 @@ public class SelectionUtilities {
 		 * TODO defensive checks to ensure table exists and column exists
 		 */
 
+		// there are no conditions passed, return everything
+		if (operators.length == 0) {
+			return selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
+		}
+
 		String primaryKey = getPrimaryKeyColumnName(tableName);
 
 		ArrayList<String> indexedColumns = getIndexedColumns(tableName);
@@ -29,7 +34,7 @@ public class SelectionUtilities {
 				return selectByPrimaryKeyIndexed(tableName, columnName, arguments, operators);
 			} else {
 				// primary key only
-				return SelectionUtilities.selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
+				return selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
 			}
 		} else {
 			if (indexedColumns.contains(columnName)) {
@@ -37,7 +42,7 @@ public class SelectionUtilities {
 				return selectByNonPrimaryKeyIndexed(tableName, columnName, arguments, operators);
 			} else {
 				// not primary key and not indexed
-				return SelectionUtilities.selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
+				return selectFromNonIndexedColumn(tableName, columnName, arguments, operators);
 			}
 		}
 	}

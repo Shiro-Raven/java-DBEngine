@@ -56,7 +56,7 @@ public class DBApp {
 
 		while (line != null) {
 			String[] content = line.split(",");
-
+			
 			if (content[0].equals(strTableName)) {
 				data.add(content);
 				ColNameType.put(content[1], content[2]);

@@ -70,7 +70,63 @@ public class IndexUtilities {
 	}
 
 	// Creates dense index of the given column in the given table
-	protected static void createDenseIndex(String strTableName, String strColumnName) {
+	protected static void createDenseIndex(String strTableName, String strColumnName)
+			throws IOException, DBAppException {
+		
+		// TODO: strColumnName IS TOTALLY USELESS SINCE WE ARE MAKING DENSE INDEX FOR ALL COLUMNS
+		// TODO: Setting .csv file to be indexed true
+
+		DBApp app = new DBApp();
+		int tablePageNumber = 1;
+		String tempDirName = "Temp";
+
+		moveTuplesToDir(strTableName, tempDirName);
+
+		while (true) {
+
+			Page tablePage;
+
+			try {
+				
+				tablePage = PageManager.deserializePage(
+						"data/" + strTableName + "/" + tempDirName + "/page_" + tablePageNumber++ + ".ser");
+			
+			} catch (ClassNotFoundException | IOException e) {
+			
+				System.out.println("Dense Creation Is Done!");
+				new File("data/" + strTableName + "/" + tempDirName + "/").delete();
+				return;
+			
+			}
+
+			for (Hashtable<String, Object> tuple : tablePage.getRows())
+				if (tuple != null)
+					app.insertIntoTable(strTableName, tuple, false);
+
+		}
+
+	}
+
+	protected static boolean moveTuplesToDir(String strTableName, String dirName) throws IOException {
+
+		// TODO: Check if table exists
+
+		File tableDir = new File("data/" + strTableName + "/");
+		new File("data/" + strTableName + "/" + dirName + "/").delete();
+
+		if (new File("data/" + strTableName + "/" + dirName).mkdir()) {
+
+			for (File file : tableDir.listFiles())
+				if (!file.isDirectory() && file.getName().endsWith(".ser")) {
+					file.renameTo(new File("data/" + strTableName + "/" + dirName + "/" + file.getName()));
+					file.delete();
+				}
+
+			return true;
+
+		}
+
+		return false;
 
 	}
 

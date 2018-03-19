@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Hashtable;
@@ -69,9 +67,9 @@ public class IndexUtilities {
 			throws Exception {
 		if (!isPrimary) {
 			makeIndexDirectory(strTableName, strColumnName, "Dense");
+			createDenseIndex(strTableName, strColumnName);
 		}
 		makeIndexDirectory(strTableName, strColumnName, "BRIN");
-		createDenseIndex(strTableName, strColumnName);
 		if (isPrimary) {
 			updateBRINIndexOnPK(strTableName, strColumnName, 1);
 		} else {
@@ -81,7 +79,6 @@ public class IndexUtilities {
 
 	// Creates dense index of the given column in the given table
 	protected static void createDenseIndex(String strTableName, String strColumnName) throws Exception {
-
 		int tablePageNumber = 1;
 		String tempDirName = "Temp";
 
@@ -215,7 +212,7 @@ public class IndexUtilities {
 				if (e.getMessage().equals("Error!The page file does not exist")) {
 					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
 				} else {
-					throw new DBAppException("cannot process BRIN index page");
+					e.printStackTrace();
 				}
 			}
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();

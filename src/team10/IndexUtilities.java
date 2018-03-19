@@ -30,7 +30,7 @@ public class IndexUtilities {
 	// not
 	protected static boolean isColumnPrimary(String columnMeta) throws DBAppException {
 		if (columnMeta == null) {
-			throw new DBAppException("meta data retreival error");
+			throw new DBAppException("meta data retrieval error");
 		}
 		String[] columnParams = columnMeta.split(",");
 		if (columnParams[3].equals("true")) {
@@ -163,19 +163,22 @@ public class IndexUtilities {
 						currentBRINPageLoc);
 			} catch (DBAppException e) {
 				// if it does not exists create a new page
-				if (e.toString().equals("The page file does not exist")) {
+				if (e.getMessage().equals("Error!The page file does not exist")) {
 					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
+				} else {
+					throw new DBAppException("cannot process BRIN index page");
 				}
 			}
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
-			int locOfTablePageRecordInBRIN = retrieveLocOfPageRecordInBRIN(BRINRecords, changedPageNumber);
-			if (locOfTablePageRecordInBRIN > 0) {
-				updateBRINRecord(columnName, BRINRecords[locOfTablePageRecordInBRIN], minAndMaxInCurrentTablePage);
-				updateDeletedFlagOnBRINRecord(BRINRecords[locOfTablePageRecordInBRIN], currentTablePage);
-			} else {
-				int locOfNewRecordInBRIN = addNewBRINRecord(columnName, BRINIndexPage, minAndMaxInCurrentTablePage);
-				updateDeletedFlagOnBRINRecord(BRINRecords[locOfNewRecordInBRIN], currentTablePage);
+			int locOfTablePageRecordInBRIN = retrieveLocOfPageRecordInBRIN(changedPageNumber - 1);
+			if (BRINRecords[locOfTablePageRecordInBRIN] == null) {
+				BRINRecords[locOfTablePageRecordInBRIN] = new Hashtable<String, Object>();
 			}
+			updateBRINRecord(columnName, BRINRecords[locOfTablePageRecordInBRIN], minAndMaxInCurrentTablePage,
+					changedPageNumber);
+			updateDeletedFlagOnBRINRecord(BRINRecords[locOfTablePageRecordInBRIN], currentTablePage);
+			PageManager.serializePage(BRINIndexPage,
+					"data/" + tableName + "/" + columnName + "/indices/BRIN/page_" + currentBRINPageLoc + ".ser");
 			changedPageNumber++;
 			currentTablePageFile = new File("data/" + tableName + "/page_" + changedPageNumber + ".ser");
 		}
@@ -191,7 +194,6 @@ public class IndexUtilities {
 
 			// calculate the number of the BRIN page contaning the dense index page info
 			int currentBRINPageLoc = (currentDensePageLoc / PageManager.getBRINSize()) + 1;
-
 			// retrieve the dense index page to be updated
 
 			Page currentDenseIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/Dense",
@@ -204,46 +206,47 @@ public class IndexUtilities {
 						currentBRINPageLoc);
 			} catch (DBAppException e) {
 				// if it does not exists create a new page
-				if (e.toString().equals("The page file does not exist")) {
+				if (e.getMessage().equals("Error!The page file does not exist")) {
 					BRINIndexPage = new Page(currentBRINPageLoc, PageType.BRIN);
-
+				} else {
+					throw new DBAppException("cannot process BRIN index page");
 				}
 			}
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
-			int locOfDenseRecordInBRIN = retrieveLocOfPageRecordInBRIN(BRINRecords, currentDensePageLoc + 1);
-			if (locOfDenseRecordInBRIN > 0) {
-				updateBRINRecord(columnName, BRINRecords[locOfDenseRecordInBRIN], minAndMaxInCurrentPage);
-				updateDeletedFlagOnBRINRecord(BRINRecords[locOfDenseRecordInBRIN], currentDenseIndexPage);
-			} else {
-				int locOfNewRecordInBRIN = addNewBRINRecord(columnName, BRINIndexPage, minAndMaxInCurrentPage);
-				updateDeletedFlagOnBRINRecord(BRINRecords[locOfNewRecordInBRIN], currentDenseIndexPage);
+			int locOfDenseRecordInBRIN = retrieveLocOfPageRecordInBRIN(currentDensePageLoc);
+			if (BRINRecords[locOfDenseRecordInBRIN] == null) {
+				BRINRecords[locOfDenseRecordInBRIN] = new Hashtable<String, Object>();
 			}
+			updateBRINRecord(columnName, BRINRecords[locOfDenseRecordInBRIN], minAndMaxInCurrentPage,
+					currentDensePageLoc + 1);
+			updateDeletedFlagOnBRINRecord(BRINRecords[locOfDenseRecordInBRIN], currentDenseIndexPage);
 			PageManager.serializePage(BRINIndexPage,
-					"data/" + tableName + "/" + columnName + "/indices/BRIN" + currentBRINPageLoc + ".ser");
-
+					"data/" + tableName + "/" + columnName + "/indices/BRIN/page_" + currentBRINPageLoc + ".ser");
 		}
-
 	}
 
-	@SuppressWarnings("unchecked")
-	protected static int addNewBRINRecord(String columnName, Page BRINIndexPage, Object[] newMinAndMaxValues) {
-		Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
-		ArrayList<Hashtable<String, Object>> BRINRecordList = new ArrayList<Hashtable<String, Object>>(
-				Arrays.asList(BRINRecords));
-		Hashtable<String, Object> newRecord = new Hashtable<String, Object>();
-		updateBRINRecord(columnName, newRecord, newMinAndMaxValues);
-		BRINRecordList.add(newRecord);
-		Collections.sort(BRINRecordList, getBRINIndexComparator());
-		int locOfNewRecord = BRINRecordList.indexOf(newRecord);
-		BRINRecords = (Hashtable<String, Object>[]) BRINRecordList.toArray();
-		BRINIndexPage.setRows(BRINRecords);
-		return locOfNewRecord;
-	}
+	// @SuppressWarnings("unchecked")
+	// protected static int addNewBRINRecord(String columnName, Page BRINIndexPage,
+	// Object[] newMinAndMaxValues) {
+	// Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
+	// ArrayList<Hashtable<String, Object>> BRINRecordList = new
+	// ArrayList<Hashtable<String, Object>>(
+	// Arrays.asList(BRINRecords));
+	// Hashtable<String, Object> newRecord = new Hashtable<String, Object>();
+	// updateBRINRecord(columnName, newRecord, newMinAndMaxValues);
+	// BRINRecordList.add(newRecord);
+	// Collections.sort(BRINRecordList, getBRINIndexComparator());
+	// int locOfNewRecord = BRINRecordList.indexOf(newRecord);
+	// BRINRecords = (Hashtable<String, Object>[]) BRINRecordList.toArray();
+	// BRINIndexPage.setRows(BRINRecords);
+	// return locOfNewRecord;
+	// }
 
 	protected static void updateBRINRecord(String columnName, Hashtable<String, Object> BRINRecord,
-			Object[] newMinAndMaxValues) {
+			Object[] newMinAndMaxValues, int densePageLoc) {
 		BRINRecord.put(columnName + "Min", newMinAndMaxValues[0]);
 		BRINRecord.put(columnName + "Max", newMinAndMaxValues[1]);
+		BRINRecord.put("pageNumber", densePageLoc);
 	}
 
 	protected static void updateDeletedFlagOnBRINRecord(Hashtable<String, Object> BRINRecord, Page denseIndexPage) {
@@ -338,15 +341,8 @@ public class IndexUtilities {
 		};
 	}
 
-	protected static int retrieveLocOfPageRecordInBRIN(Hashtable<String, Object>[] BRINRecords, int pageLoc) {
-
-		for (int i = 0; i < BRINRecords.length; i++) {
-			Hashtable<String, Object> currentRecord = BRINRecords[i];
-			if (((int) currentRecord.get("pageNumber")) == pageLoc) {
-				return i;
-			}
-		}
-		return -1;
+	protected static int retrieveLocOfPageRecordInBRIN(int DensePageNumber) throws IOException {
+		return DensePageNumber % PageManager.getBRINSize();
 	}
 
 	protected static void EraseNonExistentDenseIndexPages(String tableName, String columnName,

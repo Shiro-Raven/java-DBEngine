@@ -8,10 +8,35 @@ import java.util.Hashtable;
 
 public class SelectionUtilities {
 
-	
-	
-	
-	
+	// checks if the range in a BRIN index entry satisfies the query conditions
+	protected static boolean brinEntrySatisfiesConditions(Object brinMax, Object brinMin, Object[] arguments,
+			String[] operators) {
+		
+		return true;
+	}
+
+	// loads the contents of all the pages of the BRIN index into an array list
+	// and returns it
+	protected static ArrayList<Page> loadAllBrinPages(String tableName, String columnName) {
+		ArrayList<Page> brinPages = new ArrayList<Page>();
+
+		String brinIndexPath = "data/" + tableName + "/" + columnName + "indices/BRIN/";
+
+		int pageCounter = 1;
+
+		while (true) {
+			try {
+				brinPages.add(PageManager.deserializePage(brinIndexPath + "page_" + pageCounter + ".ser"));
+
+			} catch (IOException | ClassNotFoundException e) {
+				break;
+			}
+			pageCounter++;
+		}
+
+		return brinPages;
+	}
+
 	// compares a column's value to an argument using an operator
 	// returns the boolean result of the comparison
 	@SuppressWarnings({ "unchecked", "rawtypes" })

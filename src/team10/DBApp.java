@@ -317,9 +317,9 @@ public class DBApp {
 	public void createBRINIndex(String strTableName, String strColumnName) throws Exception {
 		if (!IndexUtilities.tableDirectoryExists(strTableName))
 			throw new DBAppException("This table does not exist");
-		
+
 		String columnMeta = IndexUtilities.retrieveColumnMetaInTable(strTableName, strColumnName);
-		if(IndexUtilities.isColumnIndexed(columnMeta)) {
+		if (IndexUtilities.isColumnIndexed(columnMeta)) {
 			throw new DBAppException("An index is already created for this table");
 		}
 		boolean isColumnPrimary = IndexUtilities.isColumnPrimary(columnMeta);
@@ -329,6 +329,13 @@ public class DBApp {
 	@SuppressWarnings("rawtypes")
 	public Iterator selectFromTable(String strTableName, String strColumnName, Object[] objarrValues,
 			String[] strarrOperators) throws DBAppException {
+		for (Object o : objarrValues)
+			if (o == null)
+				throw new DBAppException("Null Values are not allowed");
+		for (Object o : strarrOperators)
+			if (o == null)
+				throw new DBAppException("Null Operators are not allowed");
+
 		return SelectionUtilities.selectFromTableHelper(strTableName, strColumnName, objarrValues, strarrOperators);
 	}
 }

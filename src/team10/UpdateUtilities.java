@@ -99,7 +99,7 @@ public class UpdateUtilities {
 	public static void updateDenseIndex(String strTableName, Hashtable<String, Object> newValues,
 			Hashtable<String, Object> oldValues, int tblPageNum, int tupleRowNum) throws DBAppException, IOException {
 		for (String colName : oldValues.keySet()) {
-			System.out.println("Now rearranging dense of " + colName);
+			// System.out.println("Now rearranging dense of " + colName);
 			Object oldValue = oldValues.get(colName);
 			Object newValue = newValues.get(colName);
 			// for every column Load the brin and Go through it with the old
@@ -130,7 +130,7 @@ public class UpdateUtilities {
 				}
 				curBRINPage++;
 			}
-			System.out.println("Found Dense Index page number. value is " + densePageNum);
+			// System.out.println("Found Dense Index page number. value is " + densePageNum);
 			// find the key, check the table and page to avoid duplicate
 			// problems
 			Page curDensePage = IndexUtilities.retrievePage("data/" + strTableName + "/" + colName + "/indices/Dense",
@@ -142,31 +142,31 @@ public class UpdateUtilities {
 				// replace the value
 				if (curRow.get("value").equals(oldValue) && (int) curRow.get("pageNumber") == tblPageNum
 						&& (int) curRow.get("locInPage") == tupleRowNum) {
-					System.out.println("New value added");
+					// System.out.println("New value added");
 					curDensePage.getRows()[curRowIndex].put("value", newValue);
-					System.out.println(curDensePage.getRows()[curRowIndex].toString());
+					// System.out.println(curDensePage.getRows()[curRowIndex].toString());
 					break;
 				}
 			}
-			System.out.println("New value added. i is " + curRowIndex);
+			// System.out.println("New value added. i is " + curRowIndex);
 			// re arrange
 			int direction = ((Comparable) oldValue).compareTo(((Comparable) newValue));
 			// If the value didn't really change, continue
-			System.out.println("Direction is " + direction);
+			// System.out.println("Direction is " + direction);
 			if (direction == 0)
 				continue;
 			// false is up, true is down
 			boolean goDown = direction < 0 ? true : false;
 			ArrayList<Integer> changedIndexPages = new ArrayList<>();
 			int newRowIndex;
-			System.out.println("Entered BigLoop");
+			// System.out.println("Entered BigLoop");
 			BigBrotherLoop: while (true) {
-				System.out.println("Old i is " + curRowIndex);
+				// system.out.println("Old i is " + curRowIndex);
 				newRowIndex = goDown ? curRowIndex + 1 : curRowIndex - 1;
-				System.out.println("New i is " + newRowIndex);
+				// system.out.println("New i is " + newRowIndex);
 				// Are we at the first entry?
 				if (newRowIndex == -1) {
-					System.out.println("First Entry case");
+					// system.out.println("First Entry case");
 					// Is this the first dense page?
 					if (densePageNum == 1) {
 						if (!changedIndexPages.contains(densePageNum))
@@ -193,7 +193,7 @@ public class UpdateUtilities {
 							curDensePage.getRows()[curRowIndex] = prevPage.getRows()[prevPage.getMaxRows() - 1];
 							prevPage.getRows()[prevPage.getMaxRows() - 1] = tmp;
 							curRowIndex = prevPage.getMaxRows() - 1;
-							System.out.println("Swapped and went to previous page, i is " + curRowIndex);
+							// system.out.println("Swapped and went to previous page, i is " + curRowIndex);
 							if (!changedIndexPages.contains(densePageNum))
 								changedIndexPages.add(densePageNum);
 							// and change the dense page and repeat
@@ -204,7 +204,7 @@ public class UpdateUtilities {
 					}
 				} // Are we at the last entry?
 				else if (newRowIndex == curDensePage.getMaxRows()) {
-					System.out.println("Last Entry case");
+					// system.out.println("Last Entry case");
 					// Try loading a next page
 					try {
 						Page nextPage = IndexUtilities.retrievePage(
@@ -218,7 +218,7 @@ public class UpdateUtilities {
 									+ "/indices/Dense/page_" + densePageNum + ".ser");
 							break BigBrotherLoop;
 						} else {
-							System.out.println("Swapped and went to next page, i is " + curRowIndex);
+							// system.out.println("Swapped and went to next page, i is " + curRowIndex);
 							// If not, swap
 							Hashtable<String, Object> tmp = curDensePage.getRows()[curRowIndex];
 							curDensePage.getRows()[curRowIndex] = nextPage.getRows()[0];
@@ -240,7 +240,7 @@ public class UpdateUtilities {
 						break BigBrotherLoop;
 					}
 				} else {
-					System.out.println("middle of page case");
+					// system.out.println("middle of page case");
 					// Else, we are in the middle of a page
 					// Get the next/previous element;
 					if (curDensePage.getRows()[newRowIndex] == null) {
@@ -252,15 +252,15 @@ public class UpdateUtilities {
 					}
 					int compareRes = IndexUtilities.compareIndexElements(curDensePage.getRows()[curRowIndex],
 							curDensePage.getRows()[newRowIndex]);
-					System.out.println(curDensePage.getRows()[curRowIndex].toString());
-					System.out.println(curDensePage.getRows()[newRowIndex].toString());
-					System.out.println("comparison returned " + compareRes);
+					// system.out.println(curDensePage.getRows()[curRowIndex].toString());
+					// system.out.println(curDensePage.getRows()[newRowIndex].toString());
+					// system.out.println("comparison returned " + compareRes);
 
 					// If ordered, stop, else swap
 					if (goDown && compareRes < 0 || !goDown && compareRes > 0) {
 						if (!changedIndexPages.contains(densePageNum))
 							changedIndexPages.add(densePageNum);
-						System.out.println("Swapped within the page, i is " + curRowIndex);
+						// system.out.println("Swapped within the page, i is " + curRowIndex);
 						Hashtable<String, Object> tmp = curDensePage.getRows()[curRowIndex];
 						curDensePage.getRows()[curRowIndex] = curDensePage.getRows()[newRowIndex];
 						curDensePage.getRows()[newRowIndex] = tmp;
@@ -278,7 +278,7 @@ public class UpdateUtilities {
 					curRowIndex = newRowIndex;
 				}
 			}
-			System.out.println("Finished re-arranging, calling Reda's method");
+			// system.out.println("Finished re-arranging, calling Reda's method");
 			IndexUtilities.updateBRINIndexOnDense(strTableName, colName, changedIndexPages);
 		}
 	}

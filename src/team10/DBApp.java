@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Iterator;
@@ -171,7 +172,7 @@ public class DBApp {
 		Page currentTblPage;
 		// Finding Tuple based on whether the primary key is indexed or not
 		if (indexedColumns.contains(PKeyName)) {
-			System.out.println("PK BRIN used for finding tuple.");
+			// System.out.println("PK BRIN used for finding tuple.");
 			// If yes, use the index to find the tuple
 			int curBRINPage = 1;
 			MainLoop: while (true) {
@@ -214,7 +215,7 @@ public class DBApp {
 				// if a matching row is found
 				if (curRow.get(PKeyName).equals(keyValue) && !((boolean) curRow.get("isDeleted"))) {
 					tupleRowNum = i;
-					System.out.println("Tuple found in page: " + tblPageNum + " in row: " + tupleRowNum);
+					// System.out.println("Tuple found in page: " + tblPageNum + " in row: " + tupleRowNum);
 					found = true;
 					break;
 				}
@@ -224,7 +225,7 @@ public class DBApp {
 			}
 
 		} else {
-			System.out.println("PK BRIN not used for finding tuples");
+			// System.out.println("PK BRIN not used for finding tuples");
 			// Otherwise, go through the table linearly
 			MainLoop: while (true) {
 				try {
@@ -237,7 +238,7 @@ public class DBApp {
 						// if a matching row is found
 						if (curRow.get(PKeyName).equals(keyValue) && !((boolean) curRow.get("isDeleted"))) {
 							tupleRowNum = i;
-							System.out.println("Tuple found in page: " + tblPageNum + " in row: " + tupleRowNum);
+							// System.out.println("Tuple found in page: " + tblPageNum + " in row: " + tupleRowNum);
 							break MainLoop;
 						}
 					}
@@ -250,11 +251,11 @@ public class DBApp {
 
 		// Now we have the page number and the row number, so update
 		if (htblColNameValue.containsKey(PKeyName)) {
-			System.out.println("PK is going to be changed");
+			// System.out.println("PK is going to be changed");
 			// If the primary key is being changed
 			// Check if it doesn't violate
 			if (UpdateUtilities.checkNotUsed(strTableName, htblColNameValue.get(PKeyName), PKeyName)) {
-				System.out.println("No violation");
+				// System.out.println("No violation");
 				// Get the old tuple
 				Hashtable<String, Object> oldTuple = new Hashtable<>();
 				// Get its ID
@@ -264,6 +265,7 @@ public class DBApp {
 				// Do the updates
 				for (String key : htblColNameValue.keySet())
 					newTuple.put(key, htblColNameValue.get(key));
+				newTuple.put("TouchDate", new Date());
 				// Delete the old tuple
 				deleteFromTable(strTableName, oldTuple);
 				// Insert the new tuple
@@ -287,15 +289,16 @@ public class DBApp {
 				// Update the value in table
 				currentTblPage.getRows()[tupleRowNum].put(key, htblColNameValue.get(key));
 			}
+			currentTblPage.getRows()[tupleRowNum].put("TouchDate", new Date());
 			
 			// Store the table
 			PageManager.serializePage(currentTblPage, "data/" + strTableName + "/" + "page_" + tblPageNum + ".ser");
-			System.out.println("Table page updated and stored");
+			// System.out.println("Table page updated and stored");
 			
 			// Then update their dense indices, remove PKey as it's not changed
 			if (indexedColumns.contains(PKeyName))
 				indexedColumns.remove(PKeyName);
-			System.out.println("Going to arrange dense now");
+			// System.out.println("Going to arrange dense now");
 			UpdateUtilities.updateDenseIndex(strTableName, newValues, oldValues, tblPageNum, tupleRowNum);
 		}
 

@@ -128,7 +128,6 @@ public class Tests {
 		htblColNameValue.put("number", 100);
 		new DBApp().updateTable(tblName, "2" , htblColNameValue);
 
-
 	}
 
 	static void testSelection() throws DBAppException {
@@ -169,6 +168,14 @@ public class Tests {
 			row.put("name2", ranStr.nextString());
 			app.insertIntoTable(tblName, row);
 		}
+		
+		/*for (int i = 1; i <= 40; i++) {
+			row.put("id", i);
+			row.put("name", "Person " + i);
+			row.put("name2", "Human " + i);
+			app.insertIntoTable(tblName, row);
+
+		}*/
 
 	}
 

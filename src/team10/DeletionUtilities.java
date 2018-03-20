@@ -9,11 +9,12 @@ import java.util.Set;
 
 public class DeletionUtilities {
 	// used when deletion query doesn't include any indexed columns
-	public static void deleteTuples(String strTableName, Hashtable<String, Object> htblColNameValue, String primaryKey,
+	public static LinkedList<int[]> deleteTuples(String strTableName, Hashtable<String, Object> htblColNameValue, String primaryKey,
 			Set<String> tableKeys) throws IOException {
 		int deleteCount = 0; // keeps track of the no. of deleted rows
 		int pageNumber = 1;
 		Page currentPage = null;
+		LinkedList<int[]> modifiedRows = new LinkedList<int[]>();
 
 		// load and process table pages one by one until there are no more pages to load
 		boolean active = true;
@@ -30,14 +31,7 @@ public class DeletionUtilities {
 						break;
 					boolean match = true;
 					boolean quit = false; // quits for loop in case a PK match is found
-					// checking for PK match
-					if (htblColNameValue.get(primaryKey) != null
-							&& htblColNameValue.get(primaryKey).equals(row.get(primaryKey))
-							&& !(boolean) row.get("isDeleted")) {
-						// current row matches a given primary key value, no more rows can match
-						active = false;
-						quit = true;
-					}
+					
 					// checking current row against the given tuple
 					for (String tableKey : tableKeys) {
 						if (htblColNameValue.get(tableKey) != null
@@ -51,6 +45,15 @@ public class DeletionUtilities {
 						// current row matches the given tuple, proceed in deleting it
 						row.put("isDeleted", true);
 						deleteCount++;
+						modifiedRows.add(new int[] { pageNumber, i });
+						// checking for PK match
+						if (htblColNameValue.get(primaryKey) != null
+								&& htblColNameValue.get(primaryKey).equals(row.get(primaryKey))
+								&& !(boolean) row.get("isDeleted")) {
+							// current row matches a given primary key value, no more rows can match
+							active = false;
+							quit = true;
+						}
 					}
 
 					if (quit)
@@ -71,6 +74,8 @@ public class DeletionUtilities {
 		}
 		// finalization
 		System.out.printf("%d row(s) deleted\n", deleteCount);
+		
+		return modifiedRows;
 	}
 
 	// used when table has created indices
@@ -157,6 +162,8 @@ public class DeletionUtilities {
 
 				if (!active)
 					break;
+				
+				pageNumberBRIN++;
 			}
 
 			// pass modified page to updateBRIN method
@@ -174,7 +181,7 @@ public class DeletionUtilities {
 				}
 
 			if (indexedColumn == null) {
-				DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
+				modifiedRows = DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
 				// updateIndices
 				updateIndices(strTableName, indexed_columns, modifiedRows, primaryKey);
 				return;
@@ -225,13 +232,13 @@ public class DeletionUtilities {
 								break;
 
 							// checking for dense index match
-							if (rowDense.get(indexedColumn).equals(htblColNameValue.get(indexedColumn))
+							if (rowDense.get("value").equals(htblColNameValue.get(indexedColumn))
 									&& !(boolean) rowDense.get("isDeleted")) {
 								// current row matches the given tuple, proceed in deleting it
 								// delete all Dense consecutive duplicates that match the query
 								for (int j = i; j < pageDense.getMaxRows(); j++) {
 									rowDense = rowsDense[j];
-									if (!rowDense.get(indexedColumn).equals(htblColNameValue.get(indexedColumn)))
+									if (!rowDense.get("value").equals(htblColNameValue.get(indexedColumn)))
 										break;
 									// get pageNumber and locInPage
 									int pageNumber = (int) rowDense.get("pageNumber");
@@ -283,6 +290,8 @@ public class DeletionUtilities {
 								+ "/indices/Dense/" + "page_" + pageDense.getPageNumber() + ".ser");
 
 					}
+					
+					pageNumberBRIN++;
 				} catch (FileNotFoundException e) {
 					// there are no more pages in this table
 					active = false; // break out of the while loop to finalize
@@ -387,7 +396,7 @@ public class DeletionUtilities {
 						// save changes to Dense page
 						PageManager.serializePage(pageDense, "data/" + strTableName + "/" + column + "/indices/Dense/"
 								+ "page_" + pageDense.getPageNumber() + ".ser");
-					} catch (ClassNotFoundException e) {
+					} catch (FileNotFoundException e) {
 						// there are no more pages in this index
 						break; // break out of the while loop to finalize
 					}

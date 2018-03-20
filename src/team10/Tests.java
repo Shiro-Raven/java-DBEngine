@@ -3,7 +3,7 @@ package team10;
 import java.util.Hashtable;
 
 public class Tests {
-	
+
 	static String tblName = "mockTable";
 
 	static void testDenseIndex(String tblName, String colName) {
@@ -78,17 +78,17 @@ public class Tests {
 			for (int i = 0; i < BRINIndexPage.getMaxRows() && BRINIndexPage.getRows()[i] != null; i++) {
 
 				Hashtable<String, Object> BRINIndexRow = BRINIndexPage.getRows()[i];
-				Page tempPage = PageManager.loadPageIfExists(
-						"data/" + tblName + "/page_" + ((int) BRINIndexRow.get("pageNumber")) + ".ser");
+				Page tempPage = PageManager.loadPageIfExists("data/" + tblName + "/" + colName + "/indices/Dense/page_"
+						+ ((int) BRINIndexRow.get("pageNumber")) + ".ser");
 
 				int lastIndex;
 				for (lastIndex = -1; lastIndex < (tempPage.getMaxRows() - 1)
 						&& tempPage.getRows()[lastIndex + 1] != null; lastIndex++)
 					;
 
-				if (!tempPage.getRows()[0].get(colName).equals(BRINIndexRow.get(colName + "Min")))
+				if (!tempPage.getRows()[0].get("value").equals(BRINIndexRow.get(colName + "Min")))
 					System.out.println("Error With Initial Values: " + BRINIndexRow + " & " + tempPage.getRows()[0]);
-				if (!tempPage.getRows()[lastIndex].get(colName).equals(BRINIndexRow.get(colName + "Max")))
+				if (!tempPage.getRows()[lastIndex].get("value").equals(BRINIndexRow.get(colName + "Max")))
 					System.out.println(
 							"Error With Final Values: " + BRINIndexRow + " & " + tempPage.getRows()[lastIndex]);
 
@@ -111,9 +111,9 @@ public class Tests {
 
 	public static void main(String[] args) throws Exception {
 
-		createMockTable();
-		insertValuesIntoTable();
-		new DBApp().createBRINIndex(tblName, "name");
+		// createMockTable();
+		// insertValuesIntoTable();
+		new DBApp().createBRINIndex(tblName, "id");
 		testDenseIndex(tblName, "name");
 		testBRINIndex(tblName, "name");
 

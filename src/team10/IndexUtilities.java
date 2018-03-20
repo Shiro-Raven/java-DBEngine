@@ -38,6 +38,18 @@ public class IndexUtilities {
 
 	}
 
+	protected static boolean isColumnIndexed(String columnMeta) throws DBAppException {
+		if (columnMeta == null) {
+			throw new DBAppException("meta data retrieval error");
+		}
+		String[] columnParams = columnMeta.split(",");
+		if (columnParams[4].equals("true")) {
+			return true;
+		}
+		return false;
+
+	}
+
 	// Retrieves meta data of specific column in specific table
 	protected static String retrieveColumnMetaInTable(String strTableName, String strColumnName) {
 		BufferedReader metaReader;
@@ -73,7 +85,8 @@ public class IndexUtilities {
 		if (isPrimary) {
 			updateBRINIndexOnPK(strTableName, strColumnName, 1);
 		} else {
-			updateBRINIndexOnDense(strTableName, strColumnName,retrieveAllPageNumbers("data/"+strTableName+"/"+strColumnName+"/indices/Dense"));
+			updateBRINIndexOnDense(strTableName, strColumnName,
+					retrieveAllPageNumbers("data/" + strTableName + "/" + strColumnName + "/indices/Dense"));
 		}
 	}
 
@@ -375,7 +388,8 @@ public class IndexUtilities {
 	// Throws a DBAppException in case the page does not exist
 
 	// Retrieve all pages in a given path
-	protected static ArrayList<Integer> retrieveAllPageNumbers(String filepath) throws IOException, ClassNotFoundException {
+	protected static ArrayList<Integer> retrieveAllPageNumbers(String filepath)
+			throws IOException, ClassNotFoundException {
 		ArrayList<Integer> pageNumbers = new ArrayList<Integer>();
 		IndexUtilities.validateDirectory(filepath);
 		ArrayList<Page> pages = new ArrayList<Page>();
@@ -385,7 +399,7 @@ public class IndexUtilities {
 
 			String name = file.getName();
 			if (name.substring(0, 5).equals("page_") && name.substring(name.indexOf('.')).equals(".ser"))
-				pageNumbers.add(Integer.parseInt(name.charAt(5)+""));
+				pageNumbers.add(Integer.parseInt(name.charAt(5) + ""));
 
 		}
 
@@ -933,22 +947,7 @@ public class IndexUtilities {
 				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
 						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 						htblColNameValue.get(indexedColumns.get(i)));
-				try {
-					IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i),
-							changedPagesAfterDenseIndexUpdate);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			} else {
-				try {
-					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
-				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+
 			}
 
 		}

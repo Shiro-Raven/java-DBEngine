@@ -73,17 +73,20 @@ public class DeletionUtilities {
 		System.out.printf("%d row(s) deleted\n", deleteCount);
 	}
 
-	// used when deletion query includes an indexed column
+	// used when table has created indices
 	public static void deleteTuplesIndexed(String strTableName, Hashtable<String, Object> htblColNameValue,
-			String primaryKey, LinkedList<String> indexed_columns, Set<String> tableKeys) throws IOException {
+			String primaryKey, LinkedList<String> indexed_columns, Set<String> tableKeys)
+			throws IOException, ClassNotFoundException, DBAppException {
 		int deleteCount = 0; // keeps track of the no. of deleted rows
 		Page pageBRIN = null;
 		int pageNumberBRIN = 1;
-		ArrayList<Integer> modifiedBRIN = new ArrayList<Integer>();
+		LinkedList<int[]> modifiedRows = new LinkedList<int[]>();
 
 		// check for PK in given tuple
 		if (htblColNameValue.get(primaryKey) != null && indexed_columns.contains(primaryKey)) {
 			// primary key provided and indexed
+			indexed_columns.remove(primaryKey);
+			int modified = -1;
 			boolean active = true;
 			// load and process BRIN index pages one by one until there are no more pages
 			while (true) {
@@ -108,9 +111,6 @@ public class DeletionUtilities {
 
 					// if target is within a range in this index page
 					else {
-						// add BRIN page number to modified BRIN pages ArrayList
-						modifiedBRIN.add(pageNumberBRIN);
-
 						// get pageNumber
 						int pageNumber;
 						pageNumber = (int) pageBRIN.getRows()[positionInIndex].get("pageNumber");
@@ -134,15 +134,18 @@ public class DeletionUtilities {
 									&& !(boolean) row.get("isDeleted")) {
 								// current row matches a given primary key value, no more rows can match
 								row.put("isDeleted", true);
+								PageManager.serializePage(pageToDeleteFrom,
+										"data/" + strTableName + "/page_" + pageToDeleteFrom.getPageNumber() + ".ser");
 								deleteCount++;
+								// add page number to modified pages ArrayList
+								modified = pageNumber;
+								// add row to modifiedRows LinkedList
+								modifiedRows.add(new int[] { pageNumber, i });
+								// signal end of while loop
 								active = false;
+								break;
 							}
-
 						}
-
-						PageManager.serializePage(pageToDeleteFrom,
-								"data/" + strTableName + "/page_" + pageToDeleteFrom.getPageNumber() + ".ser");
-
 					}
 				} catch (FileNotFoundException e) {
 					// there are no more pages in this table
@@ -155,10 +158,29 @@ public class DeletionUtilities {
 				if (!active)
 					break;
 			}
+
+			// pass modified page to updateBRIN method
+			if (modified != -1)
+				IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, modified);
 		} else {
 			// primary key either not provided or not indexed
 			// choose an indexed column to use
-			String indexedColumn = indexed_columns.getFirst();
+			String indexedColumn = null;
+			for (String column : indexed_columns)
+				if (htblColNameValue.get(column) != null) {
+					indexedColumn = column;
+					indexed_columns.remove(column);
+					break;
+				}
+
+			if (indexedColumn == null) {
+				DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
+				// updateIndices
+				updateIndices(strTableName, indexed_columns, modifiedRows, primaryKey);
+				return;
+			}
+
+			ArrayList<Integer> modified = new ArrayList<Integer>();
 			boolean active = true;
 			// load and process BRIN index pages one by one until there are no more pages
 			while (true) {
@@ -183,11 +205,10 @@ public class DeletionUtilities {
 
 					// if target is within a range in this index page
 					else {
-						// add BRIN page number to modified BRIN pages ArrayList
-						modifiedBRIN.add(pageNumberBRIN);
-
 						// get pageNumber
 						int pageNumberDense = (int) pageBRIN.getRows()[positionInIndex].get("pageNumber");
+
+						boolean modifiedDense = false;
 
 						// load Dense index page
 						Page pageDense = null;
@@ -230,11 +251,20 @@ public class DeletionUtilities {
 										}
 									}
 									if (match && !(boolean) row.get("isDeleted")) {
-										rowDense.put("isDeleted", true);
+										// delete from table
 										row.put("isDeleted", true);
 										PageManager.serializePage(pageToDeleteFrom, "data/" + strTableName + "/"
 												+ "page_" + pageToDeleteFrom.getPageNumber() + ".ser");
 										deleteCount++;
+										// delete from Dense
+										rowDense.put("isDeleted", true);
+										// add Dense page number to modified Dense pages ArrayList
+										if (!modifiedDense) {
+											modifiedDense = true;
+											modified.add(pageNumberDense);
+										}
+										// add row to modifiedRows LinkedList
+										modifiedRows.add(new int[] { pageNumber, j });
 										// checking for PK match
 										if (htblColNameValue.get(primaryKey) != null
 												&& htblColNameValue.get(primaryKey).equals(row.get(primaryKey))) {
@@ -248,6 +278,7 @@ public class DeletionUtilities {
 							}
 						}
 
+						// save changes to Dense page
 						PageManager.serializePage(pageDense, "data/" + strTableName + "/" + indexedColumn
 								+ "/indices/Dense/" + "page_" + pageDense.getPageNumber() + ".ser");
 
@@ -263,9 +294,15 @@ public class DeletionUtilities {
 				if (!active)
 					break;
 			}
+
+			// pass modified pages arraylist to updateBRIN method
+			if (modified.size() > 0)
+				IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumn, modified);
 		}
 
-		// TODO pass modifiedBRIN to updateBRIN() method
+		// updateIndices
+		if (indexed_columns.size() > 0)
+			updateIndices(strTableName, indexed_columns, modifiedRows, primaryKey);
 
 		// finalization
 		System.out.printf("%d row(s) deleted\n", deleteCount);
@@ -301,5 +338,66 @@ public class DeletionUtilities {
 		}
 		// no place found
 		return -1;
+	}
+
+	// updates indices that weren't used in deletion
+	protected static void updateIndices(String strTableName, LinkedList<String> indexed_columns,
+			LinkedList<int[]> modifiedRows, String primaryKey)
+			throws IOException, DBAppException, ClassNotFoundException {
+		for (String column : indexed_columns) {
+			if (column.equals(primaryKey)) {
+				for (int[] row : modifiedRows)
+					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, row[0]);
+			} else {
+				int pageNumberDense = 1;
+				ArrayList<Integer> modified = new ArrayList<Integer>();
+				while (true) {
+					try {
+						// load Dense index page
+						Page pageDense = null;
+						pageDense = PageManager.deserializePage("data/" + strTableName + "/" + column
+								+ "/indices/Dense/" + "page_" + pageNumberDense + ".ser");
+						Hashtable<String, Object>[] rowsDense = pageDense.getRows();
+
+						// traversing the Dense index page row by row until a null row is encountered
+						boolean pageModified = false;
+						for (int i = 0; i < pageDense.getMaxRows(); i++) {
+							Hashtable<String, Object> rowDense = rowsDense[i];
+
+							// end of page
+							if (rowDense == null)
+								break;
+
+							// get pageNumber and locInPage
+							int pageNumber = (int) rowDense.get("pageNumber");
+							int locInPage = (int) rowDense.get("locInPage");
+
+							// check if row is associated with a deleted table row
+							for (int[] row : modifiedRows)
+								if (row[0] == pageNumber && row[1] == locInPage) {
+									if (!pageModified) {
+										pageModified = true;
+										modified.add(pageNumberDense);
+									}
+									rowDense.put("isDeleted", true);
+									break;
+								}
+						}
+
+						// save changes to Dense page
+						PageManager.serializePage(pageDense, "data/" + strTableName + "/" + column + "/indices/Dense/"
+								+ "page_" + pageDense.getPageNumber() + ".ser");
+					} catch (ClassNotFoundException e) {
+						// there are no more pages in this index
+						break; // break out of the while loop to finalize
+					}
+
+					pageNumberDense++;
+				}
+				// pass modified pages ArrayList to updateBRIN method
+				if (modified.size() > 0)
+					IndexUtilities.updateBRINIndexOnDense(strTableName, column, modified);
+			}
+		}
 	}
 }

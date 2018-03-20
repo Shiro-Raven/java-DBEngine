@@ -308,12 +308,13 @@ public class DBApp {
 			throw new DBAppException("All null values tuple!");
 
 		try {
-			if (indexed_columns.size() <= 0)
+			if (indexed_columns.size() == 0)
 				DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
 			else
 				DeletionUtilities.deleteTuplesIndexed(strTableName, htblColNameValue, primaryKey, indexed_columns, tableKeys);
-			;
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 

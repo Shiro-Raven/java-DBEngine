@@ -1,10 +1,12 @@
 package team10;
 
 import java.util.Hashtable;
+import java.util.Iterator;
 
 public class Tests {
 
 	static String tblName = "muccTable";
+
 
 	static void testDenseIndex(String tblName, String colName) {
 
@@ -125,8 +127,33 @@ public class Tests {
 		Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
 		htblColNameValue.put("number", 100);
 		new DBApp().updateTable(tblName, "2" , htblColNameValue);
-		
 
+
+	}
+
+	static void testSelection() throws DBAppException {
+
+		String[] Ops = { ">", "<", ">=", "<=" };
+		// test selection
+		Object[] objarrValues = new Object[2];
+		objarrValues[0] = new Integer(7);
+		objarrValues[1] = new Integer(100);
+		String[] strarrOperators = new String[2];
+		strarrOperators[0] = ">=";
+		strarrOperators[1] = "<";
+
+		testSelectionHelper("mockTable0", "id", objarrValues, strarrOperators);
+	}
+
+	@SuppressWarnings("rawtypes")
+	static void testSelectionHelper(String strTableName, String strTableCol, Object[] objarrValues,
+			String[] strarrOperators) throws DBAppException {
+
+		Iterator resultSet = new DBApp().selectFromTable(strTableName, strTableCol, objarrValues, strarrOperators);
+
+
+		while (resultSet.hasNext())
+			System.out.println(resultSet.next());
 	}
 
 	static void insertValuesIntoTable() throws DBAppException {

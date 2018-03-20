@@ -67,11 +67,11 @@ public class InsertionUtilities {
 
 		Page page = InsertionUtilities.loadPage(tableName, positionToInsertAt[0]);
 		int maxRows = PageManager.getMaximumRowsCountinPage();
-		if(isNew) {
-			
+		if (isNew) {
+
 			htblColNameValue.put("TouchDate", new Date());
 			htblColNameValue.put("isDeleted", false);
-			
+
 		}
 		Hashtable<String, Object> tempHtblColNameValue;
 
@@ -300,6 +300,10 @@ public class InsertionUtilities {
 		int relationPageNumber = numberOfPageOfInsertion;
 		int relationRowNumber = rowNumberOfInsertion;
 
+		// get the deletion state of the newly inserted element
+		Page page = PageManager.loadPageIfExists("data/" + tableName + "/" + "page_" + relationPageNumber + ".ser");
+		boolean isDeleted = (boolean) page.getRows()[relationRowNumber].get("isDeleted");
+
 		// point to the value after the insertion
 		relationRowNumber++;
 
@@ -317,7 +321,7 @@ public class InsertionUtilities {
 					if (relationRows[i] == null) {
 						// add new value
 						ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(
-								numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value);
+								numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value, isDeleted);
 
 						return addNewValueChanges;
 					}
@@ -395,7 +399,7 @@ public class InsertionUtilities {
 
 				// add new value
 				ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
-						rowNumberOfInsertion, columnName, tableName, value);
+						rowNumberOfInsertion, columnName, tableName, value, isDeleted);
 
 				return addNewValueChanges;
 			}

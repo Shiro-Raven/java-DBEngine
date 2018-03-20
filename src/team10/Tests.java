@@ -1,10 +1,11 @@
 package team10;
 
 import java.util.Hashtable;
+import java.util.Iterator;
 
 public class Tests {
-	
-	static String tblName = "mockTable";
+
+	static String tblName = "mockTable0";
 
 	static void testDenseIndex(String tblName, String colName) {
 
@@ -78,17 +79,17 @@ public class Tests {
 			for (int i = 0; i < BRINIndexPage.getMaxRows() && BRINIndexPage.getRows()[i] != null; i++) {
 
 				Hashtable<String, Object> BRINIndexRow = BRINIndexPage.getRows()[i];
-				Page tempPage = PageManager.loadPageIfExists(
-						"data/" + tblName + "/page_" + ((int) BRINIndexRow.get("pageNumber")) + ".ser");
+				Page tempPage = PageManager.loadPageIfExists("data/" + tblName + "/" + colName + "/indices/Dense/page_"
+						+ ((int) BRINIndexRow.get("pageNumber")) + ".ser");
 
 				int lastIndex;
 				for (lastIndex = -1; lastIndex < (tempPage.getMaxRows() - 1)
 						&& tempPage.getRows()[lastIndex + 1] != null; lastIndex++)
 					;
 
-				if (!tempPage.getRows()[0].get(colName).equals(BRINIndexRow.get(colName + "Min")))
+				if (!tempPage.getRows()[0].get("value").equals(BRINIndexRow.get(colName + "Min")))
 					System.out.println("Error With Initial Values: " + BRINIndexRow + " & " + tempPage.getRows()[0]);
-				if (!tempPage.getRows()[lastIndex].get(colName).equals(BRINIndexRow.get(colName + "Max")))
+				if (!tempPage.getRows()[lastIndex].get("value").equals(BRINIndexRow.get(colName + "Max")))
 					System.out.println(
 							"Error With Final Values: " + BRINIndexRow + " & " + tempPage.getRows()[lastIndex]);
 
@@ -111,12 +112,41 @@ public class Tests {
 
 	public static void main(String[] args) throws Exception {
 
+
 		createMockTable();
-		insertValuesIntoTable();
+		new DBApp().createBRINIndex(tblName, "id");
 		new DBApp().createBRINIndex(tblName, "name");
+		insertValuesIntoTable();
+		new DBApp().createBRINIndex(tblName, "name2");
 		testDenseIndex(tblName, "name");
 		testBRINIndex(tblName, "name");
+		testDenseIndex(tblName, "name2");
+		
 
+	}
+
+	static void testSelection() throws DBAppException {
+
+		String [] Ops = {">" , "<" , ">=" , "<="};
+		// test selection
+		Object[] objarrValues = new Object[2];
+		objarrValues[0] = new Integer(7);
+		objarrValues[1] = new Integer(100);
+		String[] strarrOperators = new String[2];
+		strarrOperators[0] = ">=";
+		strarrOperators[1] = "<";
+
+		testSelectionHelper("mockTable0", "id", objarrValues, strarrOperators);
+	}
+
+	@SuppressWarnings("rawtypes")
+	static void testSelectionHelper(String strTableName, String strTableCol, Object[] objarrValues,
+			String[] strarrOperators) throws DBAppException {
+
+		Iterator resultSet = new DBApp().selectFromTable(strTableName, strTableCol, objarrValues, strarrOperators);
+
+		while (resultSet.hasNext())
+			System.out.println(resultSet.next());
 	}
 
 	static void insertValuesIntoTable() throws DBAppException {
@@ -126,6 +156,7 @@ public class Tests {
 		for (int i = 1; i <= 200; i++) {
 			row.put("id", i);
 			row.put("name", ranStr.nextString());
+			row.put("name2", ranStr.nextString());
 			app.insertIntoTable(tblName, row);
 
 		}
@@ -137,6 +168,7 @@ public class Tests {
 		Hashtable<String, String> columns = new Hashtable<String, String>();
 		columns.put("id", "java.lang.Integer");
 		columns.put("name", "java.lang.String");
+		columns.put("name2", "java.lang.String");
 		app.createTable(tblName, "id", columns);
 	}
 

@@ -38,6 +38,18 @@ public class IndexUtilities {
 
 	}
 
+	protected static boolean isColumnIndexed(String columnMeta) throws DBAppException {
+		if (columnMeta == null) {
+			throw new DBAppException("meta data retrieval error");
+		}
+		String[] columnParams = columnMeta.split(",");
+		if (columnParams[4].equals("true")) {
+			return true;
+		}
+		return false;
+
+	}
+
 	// Retrieves meta data of specific column in specific table
 	protected static String retrieveColumnMetaInTable(String strTableName, String strColumnName) {
 		BufferedReader metaReader;
@@ -73,7 +85,8 @@ public class IndexUtilities {
 		if (isPrimary) {
 			updateBRINIndexOnPK(strTableName, strColumnName, 1);
 		} else {
-			updateBRINIndexOnDense(strTableName, strColumnName,retrieveAllPageNumbers("data/"+strTableName+"/"+strColumnName+"/indices/Dense"));
+			updateBRINIndexOnDense(strTableName, strColumnName,
+					retrieveAllPageNumbers("data/" + strTableName + "/" + strColumnName + "/indices/Dense"));
 		}
 	}
 
@@ -104,7 +117,7 @@ public class IndexUtilities {
 
 			for (Hashtable<String, Object> tuple : tablePage.getRows())
 				if (tuple != null)
-					altInsertion(strTableName, tuple, false);
+					altInsertion(strTableName, tuple, strColumnName);
 
 		}
 
@@ -195,7 +208,8 @@ public class IndexUtilities {
 
 			int currentDensePageLoc = (int) (changedDenseIndexPages.get(i)) - 1;
 
-			// calculate the number of the BRIN page contaning the dense index page info
+			// calculate the number of the BRIN page contaning the dense index
+			// page info
 			int currentBRINPageLoc = (currentDensePageLoc / PageManager.getBRINSize()) + 1;
 			// retrieve the dense index page to be updated
 
@@ -207,6 +221,7 @@ public class IndexUtilities {
 				// in case the BRIN index page exists retrieve it
 				BRINIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/BRIN",
 						currentBRINPageLoc);
+				
 			} catch (DBAppException e) {
 				// if it does not exists create a new page
 				if (e.getMessage().equals("Error!The page file does not exist")) {
@@ -215,6 +230,7 @@ public class IndexUtilities {
 					e.printStackTrace();
 				}
 			}
+			
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
 			int locOfDenseRecordInBRIN = retrieveLocOfPageRecordInBRIN(currentDensePageLoc);
 			if (BRINRecords[locOfDenseRecordInBRIN] == null) {
@@ -229,7 +245,8 @@ public class IndexUtilities {
 	}
 
 	// @SuppressWarnings("unchecked")
-	// protected static int addNewBRINRecord(String columnName, Page BRINIndexPage,
+	// protected static int addNewBRINRecord(String columnName, Page
+	// BRINIndexPage,
 	// Object[] newMinAndMaxValues) {
 	// Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
 	// ArrayList<Hashtable<String, Object>> BRINRecordList = new
@@ -266,7 +283,8 @@ public class IndexUtilities {
 
 	protected static Page retrievePage(String pageDirectoryPath, int pageNumber) throws DBAppException {
 		// Get a page based on the containing directory path
-		// Throws a DBAppException in case the file path does not point to a directory
+		// Throws a DBAppException in case the file path does not point to a
+		// directory
 		// Throws a DBAppException in case the page does not exist
 		File pageDirectory = new File(pageDirectoryPath);
 		if (!pageDirectory.exists()) {
@@ -323,8 +341,8 @@ public class IndexUtilities {
 			}
 		} catch (NullPointerException e) {
 			/*
-			 * in case the you read a null value, that means that the page has empty records
-			 * and no more values are in it.
+			 * in case the you read a null value, that means that the page has
+			 * empty records and no more values are in it.
 			 */
 			Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
 			return minAndMaxValues;
@@ -351,10 +369,10 @@ public class IndexUtilities {
 	protected static void EraseNonExistentDenseIndexPages(String tableName, String columnName,
 			ArrayList<Integer> changedDenseIndexPages) {
 		/*
-		 * the check is only on the maximum page numbers in case a max page number does
-		 * not exist, remove it from the arraylist then recheck exists the max page
-		 * exists again for robustness once the check for existence of page passes,
-		 * break the loop
+		 * the check is only on the maximum page numbers in case a max page
+		 * number does not exist, remove it from the arraylist then recheck
+		 * exists the max page exists again for robustness once the check for
+		 * existence of page passes, break the loop
 		 */
 		do {
 			int maxPageNumber = Collections.max(changedDenseIndexPages);
@@ -371,11 +389,13 @@ public class IndexUtilities {
 	}
 
 	// Get a page based on the containing directory path
-	// Throws a DBAppException in case the file path does not point to a directory
+	// Throws a DBAppException in case the file path does not point to a
+	// directory
 	// Throws a DBAppException in case the page does not exist
 
 	// Retrieve all pages in a given path
-	protected static ArrayList<Integer> retrieveAllPageNumbers(String filepath) throws IOException, ClassNotFoundException {
+	protected static ArrayList<Integer> retrieveAllPageNumbers(String filepath)
+			throws IOException, ClassNotFoundException {
 		ArrayList<Integer> pageNumbers = new ArrayList<Integer>();
 		IndexUtilities.validateDirectory(filepath);
 		ArrayList<Page> pages = new ArrayList<Page>();
@@ -384,9 +404,12 @@ public class IndexUtilities {
 		for (File file : dir.listFiles()) {
 
 			String name = file.getName();
-			if (name.substring(0, 5).equals("page_") && name.substring(name.indexOf('.')).equals(".ser"))
-				pageNumbers.add(Integer.parseInt(name.charAt(5)+""));
+			if (name.startsWith("page_") && name.endsWith(".ser")) {
+				int pageNumber = Integer.parseInt((name.split(".ser")[0]).split("_")[1]);
+				pageNumbers.add(pageNumber);
 
+			}
+				
 		}
 
 		return pageNumbers;
@@ -437,13 +460,13 @@ public class IndexUtilities {
 
 	// revise if errors occur
 	protected static ArrayList<Integer> addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber,
-			String columnName, String tableName, Object newValue) throws DBAppException {
+			String columnName, String tableName, Object newValue, boolean isDeletedValue) throws DBAppException {
 
 		Hashtable<String, Object> newEntry = new Hashtable<>();
 		newEntry.put("value", newValue);
 		newEntry.put("pageNumber", relationPageNumber);
 		newEntry.put("locInPage", relationRowNumber);
-		newEntry.put("isDeleted", false);
+		newEntry.put("isDeleted", isDeletedValue);
 
 		int pageNumber = 1;
 		int targetLocation = 0;
@@ -858,8 +881,8 @@ public class IndexUtilities {
 		}
 	}
 
-	protected static void altInsertion(String strTableName, Hashtable<String, Object> htblColNameValue, boolean isNew)
-			throws Exception {
+	protected static void altInsertion(String strTableName, Hashtable<String, Object> htblColNameValue,
+			String newlyIndexedColumn) throws Exception {
 		String line = null;
 		BufferedReader br = null;
 		try {
@@ -928,29 +951,10 @@ public class IndexUtilities {
 
 		ArrayList<Integer> changedPagesAfterDenseIndexUpdate = new ArrayList<Integer>();
 
-		for (int i = 0; i < indexedColumns.size(); i++) {
-			if (!indexedColumns.get(i).equals(primaryKey)) {
-				changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
-						indexedColumns.get(i), tempPositionToInsertAt[0], tempPositionToInsertAt[1],
-						htblColNameValue.get(indexedColumns.get(i)));
-				try {
-					IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumns.get(i),
-							changedPagesAfterDenseIndexUpdate);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			} else {
-				try {
-					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
-				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-
+		if (!newlyIndexedColumn.equals(primaryKey)) {
+			changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
+					newlyIndexedColumn, tempPositionToInsertAt[0], tempPositionToInsertAt[1],
+					htblColNameValue.get(newlyIndexedColumn));
 		}
 
 		/** TODO update the BRIN index after insertion **/

@@ -437,13 +437,13 @@ public class IndexUtilities {
 
 	// revise if errors occur
 	protected static ArrayList<Integer> addNewValueToDenseIndex(int relationPageNumber, int relationRowNumber,
-			String columnName, String tableName, Object newValue) throws DBAppException {
+			String columnName, String tableName, Object newValue, boolean isDeletedValue) throws DBAppException {
 
 		Hashtable<String, Object> newEntry = new Hashtable<>();
 		newEntry.put("value", newValue);
 		newEntry.put("pageNumber", relationPageNumber);
 		newEntry.put("locInPage", relationRowNumber);
-		newEntry.put("isDeleted", false);
+		newEntry.put("isDeleted", isDeletedValue);
 
 		int pageNumber = 1;
 		int targetLocation = 0;

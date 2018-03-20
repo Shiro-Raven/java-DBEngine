@@ -100,13 +100,14 @@ public class SelectionUtilities {
 	// it all depends on whether we are answering a primary key query or not.
 	protected static ArrayList<Integer> getSatisfyingPagesFromBrinIndex(String tableName, String columnName,
 			Object[] arguments, String[] operators) throws DBAppException {
-		String brinIndexPath = "data/" + tableName + "/" + columnName + "indices/BRIN/";
+		String brinIndexPath = "data/" + tableName + "/" + columnName + "/indices/BRIN/";
 		ArrayList<Integer> satisfyingPageNumbers = new ArrayList<Integer>();
 
 		int brinPageNumber = 1;
 
 		while (true) {
 			Page brinPage = PageManager.loadPageIfExists(brinIndexPath + "page_" + brinPageNumber + ".ser");
+			
 			if (brinPage == null)
 				break;
 			for (int i = 0; i < brinPage.getRows().length && brinPage.getRows()[i] != null; i++) {

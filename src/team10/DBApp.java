@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -259,6 +260,7 @@ public class DBApp {
 		String line = null;
 		BufferedReader br = null;
 		Hashtable<String, String> colNameType = new Hashtable<>();
+		LinkedList<String> indexed_columns = new LinkedList<String>();
 		String primaryKey = null;
 
 		try {
@@ -271,6 +273,8 @@ public class DBApp {
 					colNameType.put(content[1], content[2]);
 					if ((content[3].toLowerCase()).equals("true"))
 						primaryKey = content[1];
+					if (content[4].toLowerCase().equals("true"))
+						indexed_columns.add(content[1]);
 				}
 				line = br.readLine();
 			}
@@ -287,8 +291,6 @@ public class DBApp {
 
 		Set<String> tableKeys = colNameType.keySet();
 
-		// all nulls throw exception
-		// assumption, subject to change after asking the doctor
 		boolean allNull = true;
 		for (String tableKey : tableKeys) {
 			if (htblColNameValue.get(tableKey) != null) {
@@ -298,11 +300,15 @@ public class DBApp {
 		}
 		if (allNull)
 			throw new DBAppException("All null values tuple!");
-		// end of assumption
 
 		try {
-			DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
+			if (indexed_columns.size() == 0)
+				DeletionUtilities.deleteTuples(strTableName, htblColNameValue, primaryKey, tableKeys);
+			else
+				DeletionUtilities.deleteTuplesIndexed(strTableName, htblColNameValue, primaryKey, indexed_columns, tableKeys);
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 

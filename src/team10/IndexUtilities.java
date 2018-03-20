@@ -78,12 +78,14 @@ public class IndexUtilities {
 	protected static void createBRINFiles(String strTableName, String strColumnName, boolean isPrimary)
 			throws Exception {
 		if (!isPrimary) {
+			String primaryIndexed = setColumnIndexed(strTableName, getPrimaryColumn(strTableName), "false");
 			makeIndexDirectory(strTableName, strColumnName, "Dense");
 			createDenseIndex(strTableName, strColumnName);
+			setColumnIndexed(strTableName, getPrimaryColumn(strTableName), primaryIndexed);
 		}
 		makeIndexDirectory(strTableName, strColumnName, "BRIN");
 		if (isPrimary) {
-			setColumnIndexed(strTableName, strColumnName);
+			setColumnIndexed(strTableName, strColumnName, "true");
 			updateBRINIndexOnPK(strTableName, strColumnName, 1);
 		} else {
 			updateBRINIndexOnDense(strTableName, strColumnName,
@@ -98,7 +100,7 @@ public class IndexUtilities {
 
 		Path tmpDirPath = moveTuplesToDir(strTableName);
 		new File("data/" + strTableName + "/" + strColumnName + "/indices/Dense/").mkdirs();
-		setColumnIndexed(strTableName, strColumnName);
+		setColumnIndexed(strTableName, strColumnName, "true");
 
 		while (true) {
 
@@ -106,7 +108,8 @@ public class IndexUtilities {
 
 			try {
 
-				tablePage = PageManager.deserializePage(tmpDirPath.toString() + "/" + "page_" + tablePageNumber++ + ".ser");
+				tablePage = PageManager
+						.deserializePage(tmpDirPath.toString() + "/" + "page_" + tablePageNumber++ + ".ser");
 
 			} catch (ClassNotFoundException | IOException e) {
 
@@ -141,28 +144,33 @@ public class IndexUtilities {
 
 	}
 
-	protected static void setColumnIndexed(String strTableName, String strColName) throws IOException {
+	protected static String setColumnIndexed(String strTableName, String strColName, String isIndexed)
+			throws IOException {
 
 		String csvFullText = "";
 		String line = null;
+		String output = "false";
 		BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
 
 		while ((line = br.readLine()) != null) {
 			String[] content = line.split(",");
 
-			if (content[0].equals(strTableName) && content[1].equals(strColName))
-				csvFullText += content[0] + "," + content[1] + "," + content[2] + "," + content[3] + "," + "true"
+			if (content[0].equals(strTableName) && content[1].equals(strColName)) {
+				output = content[4];
+				csvFullText += content[0] + "," + content[1] + "," + content[2] + "," + content[3] + "," + isIndexed
 						+ "\n";
-			else
+			} else
 				csvFullText += line + "\n";
 
 		}
-		
+
 		PrintWriter writer = new PrintWriter("data/metadata.csv");
 		writer.print(csvFullText);
 		writer.close();
 
 		br.close();
+
+		return output;
 
 	}
 
@@ -222,7 +230,7 @@ public class IndexUtilities {
 				// in case the BRIN index page exists retrieve it
 				BRINIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/BRIN",
 						currentBRINPageLoc);
-				
+
 			} catch (DBAppException e) {
 				// if it does not exists create a new page
 				if (e.getMessage().equals("Error!The page file does not exist")) {
@@ -231,7 +239,7 @@ public class IndexUtilities {
 					e.printStackTrace();
 				}
 			}
-			
+
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
 			int locOfDenseRecordInBRIN = retrieveLocOfPageRecordInBRIN(currentDensePageLoc);
 			if (BRINRecords[locOfDenseRecordInBRIN] == null) {
@@ -342,8 +350,8 @@ public class IndexUtilities {
 			}
 		} catch (NullPointerException e) {
 			/*
-			 * in case the you read a null value, that means that the page has
-			 * empty records and no more values are in it.
+			 * in case the you read a null value, that means that the page has empty records
+			 * and no more values are in it.
 			 */
 			Object[] minAndMaxValues = { (Object) minValueInPage, (Object) maxValueInPage };
 			return minAndMaxValues;
@@ -370,10 +378,10 @@ public class IndexUtilities {
 	protected static void EraseNonExistentDenseIndexPages(String tableName, String columnName,
 			ArrayList<Integer> changedDenseIndexPages) {
 		/*
-		 * the check is only on the maximum page numbers in case a max page
-		 * number does not exist, remove it from the arraylist then recheck
-		 * exists the max page exists again for robustness once the check for
-		 * existence of page passes, break the loop
+		 * the check is only on the maximum page numbers in case a max page number does
+		 * not exist, remove it from the arraylist then recheck exists the max page
+		 * exists again for robustness once the check for existence of page passes,
+		 * break the loop
 		 */
 		do {
 			int maxPageNumber = Collections.max(changedDenseIndexPages);
@@ -410,7 +418,7 @@ public class IndexUtilities {
 				pageNumbers.add(pageNumber);
 
 			}
-				
+
 		}
 
 		return pageNumbers;
@@ -963,6 +971,22 @@ public class IndexUtilities {
 		System.out.println("Tuple Inserted!");
 		System.out.println(
 				"Changed Dense Index Page Numbers at the end: " + changedPagesAfterDenseIndexUpdate.toString());
+
+	}
+
+	protected static String getPrimaryColumn(String tableName) throws IOException {
+
+		String line = null;
+		BufferedReader br = new BufferedReader(new FileReader("data/metadata.csv"));
+
+		while ((line = br.readLine()) != null) {
+			String[] content = line.split(",");
+			if (content[0].equals(tableName) && content[3].equals("true"))
+				return content[1];
+		}
+
+		br.close();
+		return null;
 
 	}
 

@@ -112,7 +112,6 @@ public class Tests {
 
 	public static void main(String[] args) throws Exception {
 
-
 		createMockTable();
 		new DBApp().createBRINIndex(tblName, "id");
 		new DBApp().createBRINIndex(tblName, "name");
@@ -121,13 +120,12 @@ public class Tests {
 		testDenseIndex(tblName, "name");
 		testBRINIndex(tblName, "name");
 		testDenseIndex(tblName, "name2");
-		
 
 	}
 
 	static void testSelection() throws DBAppException {
 
-		String [] Ops = {">" , "<" , ">=" , "<="};
+		String[] Ops = { ">", "<", ">=", "<=" };
 		// test selection
 		Object[] objarrValues = new Object[2];
 		objarrValues[0] = new Integer(7);

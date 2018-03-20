@@ -106,7 +106,7 @@ public class IndexUtilities {
 
 			try {
 
-				tablePage = PageManager.deserializePage(tmpDirPath.toString() + "page_" + tablePageNumber++ + ".ser");
+				tablePage = PageManager.deserializePage(tmpDirPath.toString() + "/" + "page_" + tablePageNumber++ + ".ser");
 
 			} catch (ClassNotFoundException | IOException e) {
 
@@ -133,7 +133,7 @@ public class IndexUtilities {
 
 		for (File file : tableDir.listFiles())
 			if (!file.isDirectory() && file.getName().endsWith(".ser")) {
-				file.renameTo(new File(tmpDirPath.toString() + file.getName()));
+				file.renameTo(new File(tmpDirPath.toString() + "/" + file.getName()));
 				file.delete();
 			}
 

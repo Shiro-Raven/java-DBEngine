@@ -83,6 +83,7 @@ public class IndexUtilities {
 		}
 		makeIndexDirectory(strTableName, strColumnName, "BRIN");
 		if (isPrimary) {
+			setColumnIndexed(strTableName, strColumnName);
 			updateBRINIndexOnPK(strTableName, strColumnName, 1);
 		} else {
 			updateBRINIndexOnDense(strTableName, strColumnName,

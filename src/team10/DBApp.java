@@ -206,7 +206,7 @@ public class DBApp {
 				} catch (DBAppException e) {
 					System.out.println(e.getMessage());
 				} catch (NullPointerException e) {
-					System.out.println("No Record with such key value!");
+					throw new DBAppException("No Record with such key value!");
 				}
 			}
 			// After finding page, find the tuple

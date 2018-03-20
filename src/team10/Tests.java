@@ -126,10 +126,11 @@ public class Tests {
 		// Delete this after testing
 		Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
 		htblColNameValue.put("number", 100);
-		new DBApp().updateTable(tblName, "2" , htblColNameValue);
+		new DBApp().updateTable(tblName, "2423" , htblColNameValue);
 
 	}
 
+	@SuppressWarnings("unused")
 	static void testSelection() throws DBAppException {
 
 		String[] Ops = { ">", "<", ">=", "<=" };

@@ -133,7 +133,7 @@ public class DBApp {
 			throw new DBAppException("Do not leave stuff null!");
 
 		// Check if the table exists using checkValidName from CreationUtilites
-		if (IndexUtilities.tableDirectoryExists(strTableName))
+		if (!IndexUtilities.tableDirectoryExists(strTableName))
 			throw new DBAppException("Do you know your tables?");
 
 		// Get Columns and Primary key of needed table (with its type)
@@ -267,7 +267,7 @@ public class DBApp {
 			// Store the table
 			PageManager.serializePage(currentTblPage, "data/" + strTableName + "/" + "page_" + tblPageNum + ".ser");
 			
-			// Then update their dense indices
+			// Then update their dense indices, remove PKey as it's not changed
 			if (indexedColumns.contains(PKeyName))
 				indexedColumns.remove(PKeyName);
 			UpdateUtilities.updateDenseIndex(strTableName, newValues, oldValues, tblPageNum, tupleRowNum);

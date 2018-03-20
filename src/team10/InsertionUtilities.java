@@ -14,270 +14,42 @@ import java.util.Set;
  *         will not produce right results.
  *
  */
+
+// important!!!!: Not all PageManager.deserialize can be replaced with
+// loadPage!!! And so is the case with indices.
 public class InsertionUtilities {
 
-	// change exception to DBAppException
-	@SuppressWarnings("rawtypes")
-	public static int[] searchForInsertionPosition(String strTableName, ArrayList<String> primaryKey,
+	public static int[] searchForInsertionPosition(String strTableName, String primaryKey,
 			Hashtable<String, Object> htblColNameValue) throws DBAppException {
-
 		int pageNumber = 1;
-		int rowNumber = 0;
-
 		Page currentPage = null;
-
-		// declare array lists for primary key comparisons
-		ArrayList<Comparable> insertTupleKeyValues = null;
-		ArrayList<Comparable> tableRowKeyValues = null;
-
-		// get the values of the primary key of the tuple we want to insert
-		// for future comparisons
-		insertTupleKeyValues = getPrimaryKeyValues(primaryKey, htblColNameValue);
-
-		// initialize the incremental key for comparison
-		ArrayList<Comparable> incrementalKeyValues = new ArrayList<Comparable>();
-		incrementalKeyValues.add(insertTupleKeyValues.get(0));
-		int incrementalKeyCounter = 1;
 
 		while (true) {
 			try {
 				currentPage = PageManager.deserializePage("data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
-			} catch (Exception e) {
-				// There are no more pages for this table.
-
-				// There are no pages at all
-				if (currentPage == null) {
+			} catch (IOException | ClassNotFoundException e) {
+				// we need a new page
+				if (currentPage == null)
 					return new int[] { 1, 0 };
-				}
-
-				// the last requested page was not found
-				else {
-					// load the rows of the previous page
-					Hashtable<String, Object>[] table = currentPage.getRows();
-
-					// begin the iteration on the rows
-					for (int i = 0; i < currentPage.getMaxRows(); i++) {
-						// The table row is empty
-						if (table[i] == null) {
-							rowNumber = i;
-							return new int[] { currentPage.getPageNumber(), rowNumber };
-						}
-						// The table row is not empty
-						Hashtable<String, Object> currentRow = table[i];
-
-						tableRowKeyValues = getPrimaryKeyValues(primaryKey, currentRow);
-
-						int comparisonResult = compareKeys(incrementalKeyValues, tableRowKeyValues);
-
-						// The values from incementalKey and tableRowKeyValues
-						// are exactly alike
-						// Therefore, the key must be expanded
-
-						while (comparisonResult == 0) {
-							if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-								// check if the matching tuple was deleted
-								if (((boolean) currentRow.get("isDeleted"))) {
-									rowNumber = i;
-									return new int[] { currentPage.getPageNumber(), rowNumber };
-								} else {
-									throw new DBAppException("The primary key constraint was violated.");
-								}
-							} else {
-								// add one more column to the primary key
-								// columns examined
-								// e.g. firstName -> firstName, lastName
-								incrementalKeyValues.add(insertTupleKeyValues.get(incrementalKeyCounter));
-								incrementalKeyCounter++;
-								// see if the current row is now okay to
-								// insert the values in
-								comparisonResult = compareKeys(incrementalKeyValues, tableRowKeyValues);
-							}
-						}
-						// comparison result is no longer 0
-
-						// The values from incrementalKey are less than
-						// tableRowKeyValues
-						if (comparisonResult == -1) {
-							rowNumber = i;
-							return new int[] { currentPage.getPageNumber(), rowNumber };
-						}
-						// The values from incrementalKey are not less than or
-						// equal tableRowKeyValues
-						// Therefore, we continue the iteration, checking the
-						// next row
-					}
-					// We went through all the rows of the page and no suitable
-					// location was found
-					// Return the page number of a page to be newly created
+				else
 					return new int[] { currentPage.getPageNumber() + 1, 0 };
-				}
 			}
 
-			// The catch block ends here
-			// The page was loaded successfully and is now stored in currentPage
-
-			// load the first row of the page
-			Hashtable<String, Object> firstRow = currentPage.getRows()[0];
-
 			// for some reason, the firstRow was null
-			if (firstRow == null) {
+			if (currentPage.getRows()[0] == null) {
 				return new int[] { currentPage.getPageNumber(), 0 };
 			}
 
-			// get the first row's key values
-			tableRowKeyValues = getPrimaryKeyValues(primaryKey, firstRow);
+			// check if we can insert in this page
+			int rowNumber = getRowPositionToInsertAt(currentPage, primaryKey, htblColNameValue);
 
-			// compare
-			int comparisonResult = compareKeys(incrementalKeyValues, tableRowKeyValues);
-
-			// The values from incementalKey and tableRowKeyValues
-			// are exactly alike
-			// Therefore, the key must be expanded
-
-			while (comparisonResult == 0) {
-				if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-					// check if the matching tuple was deleted
-					if (((boolean) firstRow.get("isDeleted"))) {
-						rowNumber = 0;
-						return new int[] { currentPage.getPageNumber(), rowNumber };
-					} else {
-						throw new DBAppException("The primary key constraint was violated.");
-					}
-				} else {
-					// add one more column to the primary key
-					// columns examined
-					// e.g. firstName -> firstName, lastName
-					incrementalKeyValues.add(insertTupleKeyValues.get(incrementalKeyCounter));
-					incrementalKeyCounter++;
-					// see if the current row is now okay to
-					// insert the values in
-					comparisonResult = compareKeys(incrementalKeyValues, tableRowKeyValues);
-				}
-			}
-			// comparison result is no longer 0
-
-			// The values from incrementalKey are less than
-			// tableRowKeyValues
-			if (comparisonResult == -1) {
-				break;
-			} else {
+			if (rowNumber == -1) {
 				pageNumber++;
-			}
-		}
-
-		// A page where the first element is greater than the tuple to be
-		// inserted has been found
-		// Proceed to the page before it and search linearly
-		try {
-			currentPage = PageManager.deserializePage(
-					"data/" + strTableName + "/" + "page_" + (currentPage.getPageNumber() - 1) + ".ser");
-		} catch (Exception e) {
-			// unexpected error
-			// could not load the previous page
-			// e.printStackTrace();
-		}
-
-		// re-initialize the incremental key for comparison
-		incrementalKeyValues = new ArrayList<Comparable>();
-		incrementalKeyValues.add(insertTupleKeyValues.get(0));
-		incrementalKeyCounter = 1;
-
-		// load the rows of the previous page
-		Hashtable<String, Object>[] table = currentPage.getRows();
-
-		// begin the iteration on the rows
-		for (int i = 0; i < currentPage.getMaxRows(); i++) {
-			// The table row is empty
-			if (table[i] == null) {
-				rowNumber = i;
-				return new int[] { currentPage.getPageNumber(), rowNumber };
-			}
-
-			// The table row is not empty
-			Hashtable<String, Object> currentRow = table[i];
-
-			tableRowKeyValues = getPrimaryKeyValues(primaryKey, currentRow);
-
-			int comparisonResult = compareKeys(incrementalKeyValues, tableRowKeyValues);
-
-			// The values from incementalKey and tableRowKeyValues
-			// are exactly alike
-			// Therefore, the key must be expanded
-
-			while (comparisonResult == 0) {
-				// is the key expandable?
-				if (incrementalKeyValues.size() == tableRowKeyValues.size()) {
-					// check if the matching tuple was deleted
-					if (((boolean) currentRow.get("isDeleted"))) {
-						rowNumber = i;
-						return new int[] { currentPage.getPageNumber(), rowNumber };
-					} else {
-						throw new DBAppException("The primary key constraint was violated.");
-					}
-				} else {
-					// add one more column to the primary key
-					// columns examined
-					// e.g. for P.K.=(firstName,lastName) we expand: firstName
-					// -> firstName, lastName
-					incrementalKeyValues.add(insertTupleKeyValues.get(incrementalKeyCounter));
-					incrementalKeyCounter++;
-					// see if the current row is now okay to
-					// insert the values in
-					comparisonResult = compareKeys(incrementalKeyValues, tableRowKeyValues);
-				}
-			}
-			// comparison result is no longer 0
-
-			// The values from incrementalKey are less than
-			// tableRowKeyValues
-			if (comparisonResult == -1) {
-				rowNumber = i;
+				continue;
+			} else {
 				return new int[] { currentPage.getPageNumber(), rowNumber };
 			}
 		}
-
-		// The whole page contained values less than the ones we want to insert
-		// Therefore, we insert in the first position of the next page
-		return new int[] { currentPage.getPageNumber() + 1, 0 };
-	}
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static int compareKeys(ArrayList<Comparable> incrementalKey, ArrayList<Comparable> tableRowKeyValues) {
-
-		for (int i = 0; i < incrementalKey.size(); i++) {
-			// compare corresponding keys in the two lists
-			int result = incrementalKey.get(i).compareTo(tableRowKeyValues.get(i));
-
-			// if any of the incrementalKeys examined sequentially
-			// is less than the corresponding tableRowKey
-			// return -1
-			if (result == -1) {
-				return -1;
-			}
-
-			// if any of the incrementalKeys examined sequentially
-			// is greater than the corresponding tableRowKey
-			// return 1
-			if (result == 1) {
-				return 1;
-			}
-		}
-
-		// all the keys are equal, so in this case return 0
-		return 0;
-	}
-
-	@SuppressWarnings("rawtypes")
-	private static ArrayList<Comparable> getPrimaryKeyValues(ArrayList<String> primaryKey,
-			Hashtable<String, Object> tuple) {
-
-		ArrayList<Comparable> tupleKeyValues = new ArrayList<Comparable>();
-
-		for (int i = 0; i < primaryKey.size(); i++) {
-			tupleKeyValues.add((Comparable) tuple.get(primaryKey.get(i)));
-		}
-
-		return tupleKeyValues;
 	}
 
 	public static boolean isValidTuple(Hashtable<String, String> ColNameType, Hashtable<String, Object> Tuple) {
@@ -291,12 +63,16 @@ public class InsertionUtilities {
 	}
 
 	public static boolean insertTuple(String tableName, int[] positionToInsertAt,
-			Hashtable<String, Object> htblColNameValue) throws IOException {
+			Hashtable<String, Object> htblColNameValue, boolean isNew) throws IOException {
 
 		Page page = InsertionUtilities.loadPage(tableName, positionToInsertAt[0]);
 		int maxRows = PageManager.getMaximumRowsCountinPage();
-		htblColNameValue.put("TouchDate", new Date());
-		htblColNameValue.put("isDeleted", false);
+		if (isNew) {
+
+			htblColNameValue.put("TouchDate", new Date());
+			htblColNameValue.put("isDeleted", false);
+
+		}
 		Hashtable<String, Object> tempHtblColNameValue;
 
 		for (int i = positionToInsertAt[1]; i < maxRows; i++) {
@@ -305,7 +81,9 @@ public class InsertionUtilities {
 			page.getRows()[i] = htblColNameValue;
 			htblColNameValue = tempHtblColNameValue;
 
-			if (htblColNameValue == null || ((boolean) htblColNameValue.get("isDeleted")) == true)
+			// removed isDeleted == true
+
+			if (htblColNameValue == null)
 				break;
 
 			if (i == maxRows - 1) {
@@ -341,4 +119,290 @@ public class InsertionUtilities {
 
 	}
 
+	@SuppressWarnings("rawtypes")
+	public static int[] searchForInsertionPositionIndexed(String strTableName, String primaryKey,
+			Hashtable<String, Object> htblColNameValue) throws DBAppException {
+
+		Page indexPage = null;
+		int indexPageNumber = 1;
+
+		// search through the index
+		while (true) {
+			try {
+				// retrieve the index page
+				indexPage = PageManager.deserializePage("data/" + strTableName + "/" + primaryKey + "/indices/BRIN/"
+						+ "page_" + indexPageNumber + ".ser");
+
+				// search the page, find the position of the entry
+				int positionInIndex = searchIndex(indexPage.getRows(), (Comparable) htblColNameValue.get(primaryKey),
+						primaryKey);
+
+				// if not within any range in this index page, load the next
+				// page
+				if (positionInIndex == -1) {
+					indexPageNumber++;
+					continue;
+				}
+
+				// if target is within a range in this index page
+				else {
+					// get pageNumber
+					int pageNumber;
+					pageNumber = (int) indexPage.getRows()[positionInIndex].get("pageNumber");
+
+					// load page
+					Page pageToInsertAt = null;
+
+					try {
+						pageToInsertAt = PageManager
+								.deserializePage("data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
+					} catch (IOException | ClassNotFoundException e) {
+						// unexpected error
+						// could not load the page
+						e.printStackTrace();
+					}
+
+					// search for a position to insert at
+					int positionToInsertAt = getRowPositionToInsertAt(pageToInsertAt, primaryKey, htblColNameValue);
+
+					// check the position
+
+					// cannot insert in this page
+					if (positionToInsertAt == -1) {
+						pageNumber++;
+						positionToInsertAt = 0;
+					}
+
+					return new int[] { pageNumber, positionToInsertAt };
+
+				}
+
+			} catch (IOException | ClassNotFoundException e) {
+				// no more index pages
+				// get pageNumber; it must be the last entry in the previous
+				// index page
+				// because of how searchIndexForInsertion() works
+
+				// column was indexed but the current table has no values
+				if (indexPage == null) {
+					return new int[] { 1, 0 };
+				}
+
+				int pageNumber;
+				pageNumber = (int) indexPage.getRows()[indexPage.getRows().length - 1].get("pageNumber");
+
+				// load page
+				Page pageToInsertAt = null;
+
+				try {
+					pageToInsertAt = PageManager
+							.deserializePage("data/" + strTableName + "/" + "page_" + pageNumber + ".ser");
+				} catch (IOException | ClassNotFoundException e2) {
+					// unexpected error
+					// could not load the page
+					e2.printStackTrace();
+				}
+
+				// search for a position to insert at
+				int positionToInsertAt = getRowPositionToInsertAt(pageToInsertAt, primaryKey, htblColNameValue);
+
+				// check the position
+
+				// cannot insert in this page, insert in next
+				if (positionToInsertAt == -1) {
+					pageNumber++;
+					positionToInsertAt = 0;
+				}
+
+				return new int[] { pageNumber, positionToInsertAt };
+			}
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static int searchIndex(Hashtable<String, Object>[] rows, Comparable target, String primaryKey) {
+		for (int i = 0; i < rows.length; i++) {
+
+			// the index's page is not fully empty and we reached the end of its
+			// entries
+			// I assume that there are no fully empty index pages
+			if (rows[i] == null) {
+				return i - 1;
+			}
+
+			Comparable currentRowMax = (Comparable) rows[i].get(primaryKey + "Max");
+			Comparable currentRowMin = (Comparable) rows[i].get(primaryKey + "Min");
+
+			// if the target belongs in the range
+			if (target.compareTo(currentRowMax) <= 0 && target.compareTo(currentRowMin) >= 0) {
+				return i;
+			}
+
+			// if the target passed is between two ranges
+			if (target.compareTo(currentRowMin) < 0) {
+				return i;
+			}
+		}
+		// no place found
+		return -1;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected static int getRowPositionToInsertAt(Page currentPage, String primaryKey,
+			Hashtable<String, Object> tupleToInsert) throws DBAppException {
+		int rowNumber = 0;
+		Hashtable<String, Object>[] table = currentPage.getRows();
+		for (int i = 0; i < currentPage.getMaxRows(); i++) {
+			// The table row is empty
+			if (table[i] == null) {
+				rowNumber = i;
+				return rowNumber;
+			}
+
+			// The table row is not empty
+			Hashtable<String, Object> currentRow = table[i];
+
+			// compare the primary keys
+			int comparisonResult = ((Comparable) tupleToInsert.get(primaryKey))
+					.compareTo((Comparable) currentRow.get(primaryKey));
+
+			// The primary key values from toInsertTuple and currentRow primary
+			// key
+			// are exactly alike
+			if (comparisonResult == 0) {
+				// check if the matching tuple was deleted
+				if (((boolean) currentRow.get("isDeleted"))) {
+					rowNumber = i;
+					return rowNumber;
+				} else {
+					throw new DBAppException("The primary key constraint was violated.");
+				}
+			}
+
+			// The primary key value from toInsertTuple was less than the value
+			// from
+			// currentRow
+			if (comparisonResult < 0) {
+				rowNumber = i;
+				return rowNumber;
+			}
+		}
+
+		// The whole page contained values less than the one we want to insert
+		// Therefore, we insert in the first position of the next page
+		return -1;
+	}
+
+	// returns an array list of the pages in the dense index that were changed
+	protected static ArrayList<Integer> updateDenseIndexAfterInsertion(String tableName, String columnName,
+			int numberOfPageOfInsertion, int rowNumberOfInsertion, Object value) throws DBAppException {
+
+		int relationPageNumber = numberOfPageOfInsertion;
+		int relationRowNumber = rowNumberOfInsertion;
+
+		// get the deletion state of the newly inserted element
+		Page page = PageManager.loadPageIfExists("data/" + tableName + "/" + "page_" + relationPageNumber + ".ser");
+		boolean isDeleted = (boolean) page.getRows()[relationRowNumber].get("isDeleted");
+
+		// point to the value after the insertion
+		relationRowNumber++;
+
+		whileLoop: while (true) {
+			try {
+				// load relation page
+				Page currentPage = PageManager
+						.deserializePage("data/" + tableName + "/" + "page_" + relationPageNumber + ".ser");
+
+				// loop over the values
+				Hashtable<String, Object>[] relationRows = currentPage.getRows();
+
+				for (int i = relationRowNumber; i < relationRows.length; i++) {
+
+					if (relationRows[i] == null) {
+						// add new value
+						ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(
+								numberOfPageOfInsertion, rowNumberOfInsertion, columnName, tableName, value, isDeleted);
+
+						return addNewValueChanges;
+					}
+
+					int previousRowNumber;
+					int previousPageNumber;
+
+					// calculate where the entry was previously
+					// not first row
+					if (i - 1 >= 0) {
+						previousRowNumber = i - 1;
+						previousPageNumber = currentPage.getPageNumber();
+					}
+
+					// at first row
+					else {
+						// we are at the first page
+						if (currentPage.getPageNumber() == 1) {
+							previousPageNumber = 1;
+							previousRowNumber = 0;
+						}
+
+						// we are not at the first page
+						else {
+							previousPageNumber = currentPage.getPageNumber() - 1;
+							previousRowNumber = currentPage.getRows().length - 1;
+						}
+
+					}
+
+					// previous entry
+					Hashtable<String, Object> previousIndexEntry = new Hashtable<>();
+					previousIndexEntry.put("pageNumber", previousPageNumber);
+					previousIndexEntry.put("locInPage", previousRowNumber);
+					previousIndexEntry.put("value", relationRows[i].get(columnName));
+					previousIndexEntry.put("isDeleted", relationRows[i].get("isDeleted"));
+
+					// new entry
+					Hashtable<String, Object> newIndexEntry = new Hashtable<>();
+					newIndexEntry.put("pageNumber", currentPage.getPageNumber());
+					newIndexEntry.put("locInPage", i);
+					newIndexEntry.put("value", relationRows[i].get(columnName));
+					newIndexEntry.put("isDeleted", relationRows[i].get("isDeleted"));
+
+					// for debugging purposes
+					// System.out.println(previousIndexEntry);
+					// System.out.println(newIndexEntry);
+
+					if (IndexUtilities.checkForRelationConsecutiveDuplicates(currentPage, i, tableName, columnName)) {
+						int[] resumeUpdateDenseIndexAt = new int[2];
+						try {
+							resumeUpdateDenseIndexAt = IndexUtilities
+									.updateConsecutiveDuplicatesInDenseIndex(previousIndexEntry, tableName, columnName);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+
+						relationPageNumber = resumeUpdateDenseIndexAt[0];
+						relationRowNumber = resumeUpdateDenseIndexAt[1];
+						continue whileLoop;
+
+					} else {
+						IndexUtilities.findAndReplaceInDenseIndex(tableName, columnName, previousIndexEntry,
+								newIndexEntry);
+					}
+
+				}
+
+				// proceed to the next page
+				relationPageNumber++;
+				relationRowNumber = 0;
+
+			} catch (IOException | ClassNotFoundException e) {
+				// no more pages
+
+				// add new value
+				ArrayList<Integer> addNewValueChanges = IndexUtilities.addNewValueToDenseIndex(numberOfPageOfInsertion,
+						rowNumberOfInsertion, columnName, tableName, value, isDeleted);
+
+				return addNewValueChanges;
+			}
+		}
+	}
 }

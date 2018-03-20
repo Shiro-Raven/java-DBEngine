@@ -16,7 +16,7 @@ public class PageManager {
 		out.writeObject(page);
 		out.close();
 		fileOut.close();
-		
+
 		// Testing Purposes // To Be Removed //
 		PrintWriter writer = new PrintWriter(filepath.substring(0, filepath.length() - 3) + "txt");
 		writer.print(page);
@@ -56,6 +56,20 @@ public class PageManager {
 		Properties p = new Properties();
 		p.load(fileReader);
 		return Integer.parseInt(p.getProperty("BRINSize"));
+	}
+	
+	static Page loadPageIfExists(String filepath) {
+
+		try {
+
+			return PageManager.deserializePage(filepath);
+
+		} catch (Exception e) {
+
+			return null;
+
+		}
+
 	}
 
 }

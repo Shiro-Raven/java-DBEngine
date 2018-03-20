@@ -1,148 +1,290 @@
 package team10;
 
-import java.util.Date;
 import java.util.Hashtable;
+import java.util.Iterator;
 
 public class Tests {
 
-	@SuppressWarnings("deprecation")
+	static String tblName = "muccTable";
+
+
+	static void testDenseIndex(String tblName, String colName) {
+
+		int denseIndexPageNumber = 1;
+		Object lastValue = '\n';
+
+		while (true) {
+
+			Page denseIndexPage = PageManager.loadPageIfExists(
+					"data/" + tblName + "/" + colName + "/indices/Dense/page_" + denseIndexPageNumber++ + ".ser");
+
+			if (denseIndexPage == null) {
+
+				System.out.println("Dense Check Is Complete!");
+				return;
+
+			}
+
+			// Looping Through Rows Of EACH Index File
+			for (int i = 0; i < denseIndexPage.getMaxRows() && denseIndexPage.getRows()[i] != null; i++) {
+
+				Hashtable<String, Object> denseIndexRow = denseIndexPage.getRows()[i];
+
+				Page tablePage = PageManager.loadPageIfExists(
+						"data/" + tblName + "/page_" + ((Integer) denseIndexRow.get("pageNumber")) + ".ser");
+
+				if (tablePage == null) {
+
+					System.out.println("NOT FOUND: " + denseIndexRow);
+					continue;
+
+				}
+
+				// Checking Not Equality And Deletion
+				Hashtable<String, Object> tableRow = tablePage.getRows()[(Integer) denseIndexRow.get("locInPage")];
+				if (!denseIndexRow.get("value").equals(tableRow.get(colName)))
+					System.out.println("NOT EQUAL: " + denseIndexRow.get("value") + " & " + tableRow.get(colName));
+				if (!denseIndexRow.get("isDeleted").equals(tableRow.get("isDeleted")))
+					System.out.println("DELETION ERROR: " + denseIndexRow + " & " + tableRow);
+
+				// Checking Increasing Order Of Dense Indices
+				if (lastValue.toString().compareTo(denseIndexRow.get("value").toString()) > 0)
+					System.out.println("ERROR WITH ORDER: " + lastValue.toString() + " & "
+							+ denseIndexRow.get("value").toString());
+				lastValue = denseIndexRow.get("value");
+
+			}
+
+		}
+
+	}
+
+	static void testBRINIndex(String tblName, String colName) {
+
+		int BRINIndexPageNumber = 1;
+		Object lastValue = '\n';
+
+		while (true) {
+
+			Page BRINIndexPage = PageManager.loadPageIfExists(
+					"data/" + tblName + "/" + colName + "/indices/BRIN/page_" + BRINIndexPageNumber++ + ".ser");
+
+			if (BRINIndexPage == null) {
+
+				System.out.println("BRIN Check Is Complete!");
+				return;
+
+			}
+
+			// Looping Through Rows Of EACH Index File
+			for (int i = 0; i < BRINIndexPage.getMaxRows() && BRINIndexPage.getRows()[i] != null; i++) {
+
+				Hashtable<String, Object> BRINIndexRow = BRINIndexPage.getRows()[i];
+				Page tempPage = PageManager.loadPageIfExists("data/" + tblName + "/" + colName + "/indices/Dense/page_"
+						+ ((int) BRINIndexRow.get("pageNumber")) + ".ser");
+
+				int lastIndex;
+				for (lastIndex = -1; lastIndex < (tempPage.getMaxRows() - 1)
+						&& tempPage.getRows()[lastIndex + 1] != null; lastIndex++)
+					;
+
+				if (!tempPage.getRows()[0].get("value").equals(BRINIndexRow.get(colName + "Min")))
+					System.out.println("Error With Initial Values: " + BRINIndexRow + " & " + tempPage.getRows()[0]);
+				if (!tempPage.getRows()[lastIndex].get("value").equals(BRINIndexRow.get(colName + "Max")))
+					System.out.println(
+							"Error With Final Values: " + BRINIndexRow + " & " + tempPage.getRows()[lastIndex]);
+
+				if (BRINIndexRow.get(colName + "Min").toString().toString()
+						.compareTo(BRINIndexRow.get(colName + "Max").toString()) > 0)
+					System.out.println("ERROR WITH ORDER of Tuple: " + lastValue.toString() + " & "
+							+ BRINIndexRow.get(colName + "Max").toString());
+
+				// Checking Increasing Order Of BRIN Indices
+				if (lastValue.toString().compareTo(BRINIndexRow.get(colName + "Max").toString()) > 0)
+					System.out.println("ERROR WITH ORDER: " + lastValue.toString() + " & "
+							+ BRINIndexRow.get(colName + "Max").toString());
+				lastValue = BRINIndexRow.get(colName + "Max");
+
+			}
+
+		}
+
+	}
+
 	public static void main(String[] args) throws Exception {
-//
-		// Declaring Columns & Their Types
-		Hashtable<String, String> htblColNameType = new Hashtable<>();
-		htblColNameType.put("id", Integer.class.getName());
-		htblColNameType.put("first_name", String.class.getName());
-		htblColNameType.put("last_name", String.class.getName());
-		htblColNameType.put("gpa", Double.class.getName());
-		htblColNameType.put("birthdate", Date.class.getName());
-		htblColNameType.put("gender", Boolean.class.getName());
-//		// false = Male / true = Female
-//		// Women are always right, right?
-//
-//		// Making The Table With "id" As The Clustering Key
-		new DBApp().createTable("Student", "id", htblColNameType);
-//
-//		// Insertions
-//		// 1
-		Hashtable<String, Object> htblColNameValue = new Hashtable<>();
-		htblColNameValue.put("id", 1);
-		htblColNameValue.put("first_name", "Ahmed");
-		htblColNameValue.put("last_name", "Mohammed");
-		htblColNameValue.put("gpa", 1.91);
-		htblColNameValue.put("birth_date", new Date(1997, 5, 5));
-		htblColNameValue.put("gender", false);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
 
-		// 2
-		htblColNameValue.put("id", 2);
-		htblColNameValue.put("first_name", "Sarah");
-		htblColNameValue.put("last_name", "Khaled");
-		htblColNameValue.put("gpa", 0.92);
-		htblColNameValue.put("birth_date", new Date(1997, 4, 9));
-		htblColNameValue.put("gender", true);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 3
-		htblColNameValue.put("id", 50);
-		htblColNameValue.put("first_name", "Hana");
-		htblColNameValue.put("last_name", "Ismail");
-		htblColNameValue.put("gpa", 0.92);
-		htblColNameValue.put("birth_date", new Date(1996, 11, 26));
-		htblColNameValue.put("gender", true);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 4
-		htblColNameValue.put("id", 100);
-		htblColNameValue.put("first_name", "Omar");
-		htblColNameValue.put("last_name", "Elsayed");
-		htblColNameValue.put("gpa", 1.56);
-		htblColNameValue.put("birth_date", new Date(1997, 7, 12));
-		htblColNameValue.put("gender", false);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 5
-		htblColNameValue.put("id", 197);
-		htblColNameValue.put("first_name", "Mostafa");
-		htblColNameValue.put("last_name", "Hashem");
-		htblColNameValue.put("gpa", 2.16);
-		htblColNameValue.put("birth_date", new Date(1997, 2, 17));
-		htblColNameValue.put("gender", false);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 6
-		htblColNameValue.put("id", 105);
-		htblColNameValue.put("first_name", "Yasmeen");
-		htblColNameValue.put("last_name", "Khalafy");
-		htblColNameValue.put("gpa", 0.92);
-		htblColNameValue.put("birth_date", new Date(1997, 1, 1));
-		htblColNameValue.put("gender", true);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 7
-		htblColNameValue.put("id", 106);
-		htblColNameValue.put("first_name", "Yasmeen");
-		htblColNameValue.put("last_name", "Khalafy");
-		htblColNameValue.put("gpa", 0.92);
-		htblColNameValue.put("birth_date", new Date(1997, 1, 1));
-		htblColNameValue.put("gender", true);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
+		/*createMockTable();
+		new DBApp().createBRINIndex(tblName, "id");
+		new DBApp().createBRINIndex(tblName, "name");
+		insertValuesIntoTable();*/
+		/*new DBApp().createBRINIndex(tblName, "name2");
+		testDenseIndex(tblName, "name");
+		testBRINIndex(tblName, "name");
+		testDenseIndex(tblName, "name2");*/
 		
-		// 8
-		htblColNameValue.put("id", 46);
-		htblColNameValue.put("first_name", "Ahmed");
-		htblColNameValue.put("last_name", "Mohammed");
-		htblColNameValue.put("gpa", 1.91);
-		htblColNameValue.put("birth_date", new Date(1997, 5, 5));
-		htblColNameValue.put("gender", false);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 9
-		htblColNameValue.put("id", 68);
-		htblColNameValue.put("first_name", "Sarah");
-		htblColNameValue.put("last_name", "Khaled");
-		htblColNameValue.put("gpa", 0.92);
-		htblColNameValue.put("birth_date", new Date(1997, 4, 9));
-		htblColNameValue.put("gender", true);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 10
-		htblColNameValue.put("id", 51);
-		htblColNameValue.put("first_name", "Hana");
-		htblColNameValue.put("last_name", "Ismail");
-		htblColNameValue.put("gpa", 0.92);
-		htblColNameValue.put("birth_date", new Date(1996, 11, 26));
-		htblColNameValue.put("gender", true);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 11
-		htblColNameValue.put("id", 166);
-		htblColNameValue.put("first_name", "Omar");
-		htblColNameValue.put("last_name", "Elsayed");
-		htblColNameValue.put("gpa", 1.56);
-		htblColNameValue.put("birth_date", new Date(1997, 7, 12));
-		htblColNameValue.put("gender", false);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 12
-		htblColNameValue.put("id", 178);
-		htblColNameValue.put("first_name", "Mostafa");
-		htblColNameValue.put("last_name", "Hashem");
-		htblColNameValue.put("gpa", 2.16);
-		htblColNameValue.put("birth_date", new Date(1997, 2, 17));
-		htblColNameValue.put("gender", false);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
-
-		// 13
-		htblColNameValue.put("id", 501);
-		htblColNameValue.put("first_name", "Yasmeen");
-		htblColNameValue.put("last_name", "Khalafy");
-		htblColNameValue.put("gpa", 0.95);
-		htblColNameValue.put("birth_date", new Date(1997, 1, 1));
-		htblColNameValue.put("gender", true);
-		new DBApp().insertIntoTable("Student", htblColNameValue);
+		DBApp app = new DBApp();
 		
-		System.out.println("Done");
+		/*Page page1 = PageManager.loadPageIfExists("data/" + tblName + "/" + "name2" + "/indices/Dense/page_"
+				+ 1 + ".ser");
+		Hashtable<String, Object>[] rowsDense = page1.getRows();
+		
+		for (Hashtable<String, Object> rowDense : rowsDense) {
+			Hashtable<String, Object> row = new Hashtable<String, Object>();
+			row.put("name2", (String)rowDense.get("value"));
+			app.deleteFromTable(tblName, row);
+			System.out.println("Done");
+		}*/
+		
+		
+		/*for (int i = 1; i <= 20; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("id", i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*Hashtable<String, Object> row = new Hashtable<>();
+		row.put("id", -250);
+		app.deleteFromTable(tblName, row);*/
+		
+		/*for (int i = 1; i <= 30; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("name2", "Human " + i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*Hashtable<String, Object> row = new Hashtable<>();
+		row.put("name", "NUMNqgyS");
+		app.deleteFromTable(tblName, row);*/
+		
+		/*for (int i = 1; i < 10; i++) {
+			Page tempPage = PageManager.loadPageIfExists("data/" + tblName + "/" + "name" + "/indices/Dense/page_"
+					+ i + ".ser");
+			System.out.println(tempPage);
+		}/*
+		
+		/*Page BRINIndexPage = PageManager.loadPageIfExists(
+				"data/" + tblName + "/" + "name2" + "/indices/BRIN/page_" + 1 + ".ser");
+		System.out.println(BRINIndexPage);*/
 
+
+		/*createMockTable();
+		new DBApp().createBRINIndex(tblName, "id");
+		new DBApp().createBRINIndex(tblName, "name");
+		insertValuesIntoTable();*/
+		/*new DBApp().createBRINIndex(tblName, "name2");
+		testDenseIndex(tblName, "name");
+		testBRINIndex(tblName, "name");
+
+		testDenseIndex(tblName, "name2");*/
+		
+		/*Page page1 = PageManager.loadPageIfExists("data/" + tblName + "/" + "name2" + "/indices/Dense/page_"
+				+ 1 + ".ser");
+		Hashtable<String, Object>[] rowsDense = page1.getRows();
+		
+		for (Hashtable<String, Object> rowDense : rowsDense) {
+			Hashtable<String, Object> row = new Hashtable<String, Object>();
+			row.put("name2", (String)rowDense.get("value"));
+			app.deleteFromTable(tblName, row);
+			System.out.println("Done");
+		}*/
+		
+		
+		/*for (int i = 1; i <= 20; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("id", i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*Hashtable<String, Object> row = new Hashtable<>();
+		row.put("id", -250);
+		app.deleteFromTable(tblName, row);*/
+		
+		/*for (int i = 1; i <= 30; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("name2", "Human " + i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*Hashtable<String, Object> row = new Hashtable<>();
+		row.put("name", "NUMNqgyS");
+		app.deleteFromTable(tblName, row);*/
+		
+		/*for (int i = 1; i < 10; i++) {
+			Page tempPage = PageManager.loadPageIfExists("data/" + tblName + "/" + "name" + "/indices/Dense/page_"
+					+ i + ".ser");
+			System.out.println(tempPage);
+		}/*
+		
+		/*Page BRINIndexPage = PageManager.loadPageIfExists(
+				"data/" + tblName + "/" + "name2" + "/indices/BRIN/page_" + 1 + ".ser");
+		System.out.println(BRINIndexPage);*/
+		
+//		createMockTable();
+//		new DBApp().createBRINIndex(tblName, "name2");
+//		insertValuesIntoTable();
+//		testDenseIndex(tblName, "name2");
+//		testBRINIndex(tblName, "name2");
+//		new DBApp().createBRINIndex(tblName, "number");
+//		testDenseIndex(tblName, "number");
+//		testBRINIndex(tblName, "number");
+//		new DBApp().createBRINIndex(tblName, "id");
+
+		// Delete this after testing
+		// Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
+		// htblColNameValue.put("number", 100);
+		// new DBApp().updateTable(tblName, "2423" , htblColNameValue);
+
+	}
+
+	@SuppressWarnings("unused")
+	static void testSelection() throws DBAppException {
+
+		String[] Ops = { ">", "<", ">=", "<=" };
+		// test selection
+		Object[] objarrValues = new Object[2];
+		objarrValues[0] = new Integer(7);
+		objarrValues[1] = new Integer(100);
+		String[] strarrOperators = new String[2];
+		strarrOperators[0] = ">=";
+		strarrOperators[1] = "<";
+
+		testSelectionHelper("mockTable0", "id", objarrValues, strarrOperators);
+	}
+
+	@SuppressWarnings("rawtypes")
+	static void testSelectionHelper(String strTableName, String strTableCol, Object[] objarrValues,
+			String[] strarrOperators) throws DBAppException {
+
+		Iterator resultSet = new DBApp().selectFromTable(strTableName, strTableCol, objarrValues, strarrOperators);
+
+
+		while (resultSet.hasNext())
+			System.out.println(resultSet.next());
+	}
+
+	static void insertValuesIntoTable() throws DBAppException {
+		DBApp app = new DBApp();
+		RandomString ranStr = new RandomString(8);
+		Hashtable<String, Object> row = new Hashtable<>();
+		for (int i = 1; i <= 50; i++) {
+			row.put("id", i);
+			if(i < 10)
+				row.put("number", 5);
+			else
+				row.put("number", i);
+			row.put("name2", ranStr.nextString());
+			app.insertIntoTable(tblName, row);
+		}
+
+	}
+
+	static void createMockTable() throws DBAppException {
+		DBApp app = new DBApp();
+		Hashtable<String, String> columns = new Hashtable<String, String>();
+		columns.put("id", "java.lang.Integer");
+		columns.put("number", "java.lang.Integer");
+		columns.put("name2", "java.lang.String");
+		app.createTable(tblName, "id", columns);
 	}
 
 }

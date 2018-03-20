@@ -232,7 +232,7 @@ public class UpdateUtilities {
 					}
 				}
 			}
-			IndexUtilities.updateBRINIndex(strTableName, colName, changedIndexPages);
+			IndexUtilities.updateBRINIndexOnDense(strTableName, colName, changedIndexPages);
 		}
 	}
 

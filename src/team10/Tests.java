@@ -122,6 +122,46 @@ public class Tests {
 		testBRINIndex(tblName, "name");
 		testDenseIndex(tblName, "name2");
 		
+		DBApp app = new DBApp();
+		
+		/*Page page1 = PageManager.loadPageIfExists("data/" + tblName + "/" + "name2" + "/indices/Dense/page_"
+				+ 1 + ".ser");
+		Hashtable<String, Object>[] rowsDense = page1.getRows();
+		
+		for (Hashtable<String, Object> rowDense : rowsDense) {
+			Hashtable<String, Object> row = new Hashtable<String, Object>();
+			row.put("name2", (String)rowDense.get("value"));
+			app.deleteFromTable(tblName, row);
+			System.out.println("Done");
+		}*/
+		
+		
+		/*for (int i = 1; i <= 20; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("id", i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*for (int i = 1; i <= 30; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("name2", "Human " + i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*Hashtable<String, Object> row = new Hashtable<>();
+		row.put("name2", "2QfPTTiK");
+		app.deleteFromTable(tblName, row);*/
+		
+		/*for (int i = 1; i < 10; i++) {
+			Page tempPage = PageManager.loadPageIfExists("data/" + tblName + "/" + "name" + "/indices/Dense/page_"
+					+ i + ".ser");
+			System.out.println(tempPage);
+		}/*
+		
+		/*Page BRINIndexPage = PageManager.loadPageIfExists(
+				"data/" + tblName + "/" + "name2" + "/indices/BRIN/page_" + 1 + ".ser");
+		System.out.println(BRINIndexPage);*/
+		
 
 	}
 
@@ -160,6 +200,14 @@ public class Tests {
 			app.insertIntoTable(tblName, row);
 
 		}
+		
+		/*for (int i = 1; i <= 40; i++) {
+			row.put("id", i);
+			row.put("name", "Person " + i);
+			row.put("name2", "Human " + i);
+			app.insertIntoTable(tblName, row);
+
+		}*/
 
 	}
 

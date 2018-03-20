@@ -319,7 +319,7 @@ public class DBApp {
 			throw new DBAppException("This table does not exist");
 		
 		String columnMeta = IndexUtilities.retrieveColumnMetaInTable(strTableName, strColumnName);
-		if(!IndexUtilities.isColumnIndexed(columnMeta)) {
+		if(IndexUtilities.isColumnIndexed(columnMeta)) {
 			throw new DBAppException("An index is already created for this table");
 		}
 		boolean isColumnPrimary = IndexUtilities.isColumnPrimary(columnMeta);

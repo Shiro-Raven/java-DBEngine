@@ -221,6 +221,7 @@ public class IndexUtilities {
 				// in case the BRIN index page exists retrieve it
 				BRINIndexPage = retrievePage("data/" + tableName + "/" + columnName + "/indices/BRIN",
 						currentBRINPageLoc);
+				
 			} catch (DBAppException e) {
 				// if it does not exists create a new page
 				if (e.getMessage().equals("Error!The page file does not exist")) {
@@ -229,6 +230,7 @@ public class IndexUtilities {
 					e.printStackTrace();
 				}
 			}
+			
 			Hashtable<String, Object>[] BRINRecords = BRINIndexPage.getRows();
 			int locOfDenseRecordInBRIN = retrieveLocOfPageRecordInBRIN(currentDensePageLoc);
 			if (BRINRecords[locOfDenseRecordInBRIN] == null) {
@@ -402,9 +404,12 @@ public class IndexUtilities {
 		for (File file : dir.listFiles()) {
 
 			String name = file.getName();
-			if (name.substring(0, 5).equals("page_") && name.substring(name.indexOf('.')).equals(".ser"))
-				pageNumbers.add(Integer.parseInt(name.charAt(5) + ""));
+			if (name.startsWith("page_") && name.endsWith(".ser")) {
+				int pageNumber = Integer.parseInt((name.split(".ser")[0]).split("_")[1]);
+				pageNumbers.add(pageNumber);
 
+			}
+				
 		}
 
 		return pageNumbers;
@@ -950,22 +955,6 @@ public class IndexUtilities {
 			changedPagesAfterDenseIndexUpdate = InsertionUtilities.updateDenseIndexAfterInsertion(strTableName,
 					newlyIndexedColumn, tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 					htblColNameValue.get(newlyIndexedColumn));
-			try {
-				IndexUtilities.updateBRINIndexOnDense(strTableName, newlyIndexedColumn,
-						changedPagesAfterDenseIndexUpdate);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		} else {
-			try {
-				IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
-			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 		}
 
 		/** TODO update the BRIN index after insertion **/

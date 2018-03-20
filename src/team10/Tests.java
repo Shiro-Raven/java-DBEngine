@@ -112,13 +112,13 @@ public class Tests {
 	public static void main(String[] args) throws Exception {
 
 		createMockTable();
-		new DBApp().createBRINIndex(tblName, "name2");
-		insertValuesIntoTable();
-		testDenseIndex(tblName, "name2");
-		testBRINIndex(tblName, "name2");
+		new DBApp().createBRINIndex(tblName, "id");
 		new DBApp().createBRINIndex(tblName, "name");
+		insertValuesIntoTable();
+		new DBApp().createBRINIndex(tblName, "name2");
 		testDenseIndex(tblName, "name");
 		testBRINIndex(tblName, "name");
+		testDenseIndex(tblName, "name2");
 
 	}
 

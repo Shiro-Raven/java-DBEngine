@@ -156,11 +156,11 @@ public class IndexUtilities {
 			else
 				csvFullText += line + "\n";
 
-			PrintWriter writer = new PrintWriter("data/metadata.csv");
-			writer.print(csvFullText);
-			writer.close();
-
 		}
+		
+		PrintWriter writer = new PrintWriter("data/metadata.csv");
+		writer.print(csvFullText);
+		writer.close();
 
 		br.close();
 

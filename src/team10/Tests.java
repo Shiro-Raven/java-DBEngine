@@ -1,5 +1,7 @@
 package team10;
 
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.Hashtable;
 import java.util.Iterator;
 
@@ -112,19 +114,43 @@ public class Tests {
 
 	static void testSelection() throws DBAppException {
 
-		Object[] objarrValues = {new Integer(25)};
-		String[] strarrOperators = {new String("<")};
+		Object[] objarrValues = { new Integer(20), new Integer(20) };
+		String[] strarrOperators = { new String(">"), new String("<") };
 
 		@SuppressWarnings("rawtypes")
 		Iterator resultSet = new DBApp().selectFromTable(tblName, "id", objarrValues, strarrOperators);
 
 		while (resultSet.hasNext())
 			System.out.println(resultSet.next());
-		
+
+	}
+
+	static void deleteValuesFromTable() throws DBAppException, ClassNotFoundException, ParseException, IOException {
+
+		DBApp app = new DBApp();
+		Hashtable<String, Object> row = new Hashtable<>();
+		for (int i = 150; i <= 200; i++) {
+			row.put("id", i);
+			app.deleteFromTable(tblName, row);
+		}
+
+	}
+
+	static void updateValuesIntoTable() throws DBAppException, ClassNotFoundException, ParseException, IOException {
+
+		DBApp app = new DBApp();
+		RandomString ranStr = new RandomString(8);
+		Hashtable<String, Object> row = new Hashtable<>();
+		for (int i = 50; i <= 100; i++) {
+			row.put("name", ranStr.nextString());
+			row.put("name2", ranStr.nextString());
+			app.updateTable(tblName, i + "", row);
+		}
+
 	}
 
 	static void insertValuesIntoTable() throws DBAppException {
-		
+
 		DBApp app = new DBApp();
 		RandomString ranStr = new RandomString(8);
 		Hashtable<String, Object> row = new Hashtable<>();
@@ -161,6 +187,20 @@ public class Tests {
 		testBRINIndex(tblName, "name2");
 
 		testSelection();
+
+		updateValuesIntoTable();
+		testDenseIndex(tblName, "id");
+		testDenseIndex(tblName, "name");
+		testBRINIndex(tblName, "name");
+		testDenseIndex(tblName, "name2");
+		testBRINIndex(tblName, "name2");
+		
+		deleteValuesFromTable();
+		testDenseIndex(tblName, "id");
+		testDenseIndex(tblName, "name");
+		testBRINIndex(tblName, "name");
+		testDenseIndex(tblName, "name2");
+		testBRINIndex(tblName, "name2");
 
 	}
 

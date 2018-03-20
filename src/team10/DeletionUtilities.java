@@ -32,15 +32,6 @@ public class DeletionUtilities {
 					boolean match = true;
 					boolean quit = false; // quits for loop in case a PK match is found
 					
-					/*// checking for PK match
-					if (htblColNameValue.get(primaryKey) != null
-							&& htblColNameValue.get(primaryKey).equals(row.get(primaryKey))
-							&& !(boolean) row.get("isDeleted")) {
-						// current row matches a given primary key value, no more rows can match
-						active = false;
-						quit = true;
-					}*/
-					
 					// checking current row against the given tuple
 					for (String tableKey : tableKeys) {
 						if (htblColNameValue.get(tableKey) != null
@@ -228,7 +219,6 @@ public class DeletionUtilities {
 
 						// load Dense index page
 						Page pageDense = null;
-						System.out.println(pageNumberDense);
 						pageDense = PageManager.deserializePage("data/" + strTableName + "/" + indexedColumn
 								+ "/indices/Dense/" + "page_" + pageNumberDense + ".ser");
 						Hashtable<String, Object>[] rowsDense = pageDense.getRows();
@@ -240,9 +230,6 @@ public class DeletionUtilities {
 							// end of page
 							if (rowDense == null)
 								break;
-							System.out.println(pageNumberBRIN + " .. " + pageNumberDense);
-							System.out.println("Dense: " + rowDense.get("value"));
-							System.out.println("Target: " + htblColNameValue.get(indexedColumn));
 
 							// checking for dense index match
 							if (rowDense.get("value").equals(htblColNameValue.get(indexedColumn))
@@ -297,8 +284,6 @@ public class DeletionUtilities {
 								break;
 							}
 						}
-						
-						System.out.println("I do");
 
 						// save changes to Dense page
 						PageManager.serializePage(pageDense, "data/" + strTableName + "/" + indexedColumn
@@ -320,8 +305,6 @@ public class DeletionUtilities {
 			}
 
 			// pass modified pages arraylist to updateBRIN method
-			for (int x: modified)
-				System.out.println("Page modified: " + x);
 			if (modified.size() > 0)
 				IndexUtilities.updateBRINIndexOnDense(strTableName, indexedColumn, modified);
 		}

@@ -401,6 +401,7 @@ public class IndexUtilities {
 	// Throws a DBAppException in case the page does not exist
 
 	// Retrieve all pages in a given path
+	@SuppressWarnings("unused")
 	protected static ArrayList<Integer> retrieveAllPageNumbers(String filepath)
 			throws IOException, ClassNotFoundException {
 		ArrayList<Integer> pageNumbers = new ArrayList<Integer>();
@@ -966,6 +967,7 @@ public class IndexUtilities {
 		}
 	}
 
+	@SuppressWarnings("resource")
 	protected static String getPrimaryColumn(String tableName) throws IOException {
 
 		String line = null;

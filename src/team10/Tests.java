@@ -5,7 +5,8 @@ import java.util.Iterator;
 
 public class Tests {
 
-	static String tblName = "mockTable0";
+	static String tblName = "muccTable";
+
 
 	static void testDenseIndex(String tblName, String colName) {
 
@@ -165,8 +166,77 @@ public class Tests {
 				"data/" + tblName + "/" + "name2" + "/indices/BRIN/page_" + 1 + ".ser");
 		System.out.println(BRINIndexPage);*/
 
+
+		/*createMockTable();
+		new DBApp().createBRINIndex(tblName, "id");
+		new DBApp().createBRINIndex(tblName, "name");
+		insertValuesIntoTable();*/
+		/*new DBApp().createBRINIndex(tblName, "name2");
+		testDenseIndex(tblName, "name");
+		testBRINIndex(tblName, "name");
+
+		testDenseIndex(tblName, "name2");*/
+		
+		/*Page page1 = PageManager.loadPageIfExists("data/" + tblName + "/" + "name2" + "/indices/Dense/page_"
+				+ 1 + ".ser");
+		Hashtable<String, Object>[] rowsDense = page1.getRows();
+		
+		for (Hashtable<String, Object> rowDense : rowsDense) {
+			Hashtable<String, Object> row = new Hashtable<String, Object>();
+			row.put("name2", (String)rowDense.get("value"));
+			app.deleteFromTable(tblName, row);
+			System.out.println("Done");
+		}*/
+		
+		
+		/*for (int i = 1; i <= 20; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("id", i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*Hashtable<String, Object> row = new Hashtable<>();
+		row.put("id", -250);
+		app.deleteFromTable(tblName, row);*/
+		
+		/*for (int i = 1; i <= 30; i++) {
+			Hashtable<String, Object> row = new Hashtable<>();
+			row.put("name2", "Human " + i);
+			app.deleteFromTable(tblName, row);
+		}*/
+		
+		/*Hashtable<String, Object> row = new Hashtable<>();
+		row.put("name", "NUMNqgyS");
+		app.deleteFromTable(tblName, row);*/
+		
+		/*for (int i = 1; i < 10; i++) {
+			Page tempPage = PageManager.loadPageIfExists("data/" + tblName + "/" + "name" + "/indices/Dense/page_"
+					+ i + ".ser");
+			System.out.println(tempPage);
+		}/*
+		
+		/*Page BRINIndexPage = PageManager.loadPageIfExists(
+				"data/" + tblName + "/" + "name2" + "/indices/BRIN/page_" + 1 + ".ser");
+		System.out.println(BRINIndexPage);*/
+		
+//		createMockTable();
+//		new DBApp().createBRINIndex(tblName, "name2");
+//		insertValuesIntoTable();
+//		testDenseIndex(tblName, "name2");
+//		testBRINIndex(tblName, "name2");
+//		new DBApp().createBRINIndex(tblName, "number");
+//		testDenseIndex(tblName, "number");
+//		testBRINIndex(tblName, "number");
+//		new DBApp().createBRINIndex(tblName, "id");
+
+		// Delete this after testing
+		// Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
+		// htblColNameValue.put("number", 100);
+		// new DBApp().updateTable(tblName, "2423" , htblColNameValue);
+
 	}
 
+	@SuppressWarnings("unused")
 	static void testSelection() throws DBAppException {
 
 		String[] Ops = { ">", "<", ">=", "<=" };
@@ -187,6 +257,7 @@ public class Tests {
 
 		Iterator resultSet = new DBApp().selectFromTable(strTableName, strTableCol, objarrValues, strarrOperators);
 
+
 		while (resultSet.hasNext())
 			System.out.println(resultSet.next());
 	}
@@ -195,12 +266,14 @@ public class Tests {
 		DBApp app = new DBApp();
 		RandomString ranStr = new RandomString(8);
 		Hashtable<String, Object> row = new Hashtable<>();
-		for (int i = 1; i <= 200; i++) {
+		for (int i = 1; i <= 50; i++) {
 			row.put("id", i);
-			row.put("name", ranStr.nextString());
+			if(i < 10)
+				row.put("number", 5);
+			else
+				row.put("number", i);
 			row.put("name2", ranStr.nextString());
 			app.insertIntoTable(tblName, row);
-
 		}
 
 	}
@@ -209,7 +282,7 @@ public class Tests {
 		DBApp app = new DBApp();
 		Hashtable<String, String> columns = new Hashtable<String, String>();
 		columns.put("id", "java.lang.Integer");
-		columns.put("name", "java.lang.String");
+		columns.put("number", "java.lang.Integer");
 		columns.put("name2", "java.lang.String");
 		app.createTable(tblName, "id", columns);
 	}

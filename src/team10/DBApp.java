@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -137,19 +136,18 @@ public class DBApp {
 
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void updateTable(String strTableName, String strKey, Hashtable<String, Object> htblColNameValue)
-			throws DBAppException, ParseException {
+			throws DBAppException, ParseException, ClassNotFoundException, IOException {
+
+		/////////// PRELIMINARY CHECKS
+
 		// Check if null values in general
 		if (strTableName == null || strKey == null || htblColNameValue == null)
 			throw new DBAppException("Do not leave stuff null!");
 
-		// Check if all values are null
-		if (!UpdateUtilities.checkNotAllNulls(htblColNameValue))
-			throw new DBAppException("You want to update to nulls, huh?");
-
 		// Check if the table exists using checkValidName from CreationUtilites
-		if (CreationUtilities.checkValidName(strTableName))
+		if (!IndexUtilities.tableDirectoryExists(strTableName))
 			throw new DBAppException("Do you know your tables?");
 
 		// Get Columns and Primary key of needed table (with its type)
@@ -157,93 +155,150 @@ public class DBApp {
 
 		Hashtable<String, String> tblNameType = (Hashtable<String, String>) neededData.get(0);
 		String PKeyName = (String) neededData.get(1);
+		ArrayList<String> indexedColumns = (ArrayList<String>) neededData.get(2);
 
 		// Check if valid tuple
 		if (!InsertionUtilities.isValidTuple(tblNameType, htblColNameValue))
 			throw new DBAppException("Stick to to the types!");
 
-		Object keyValue = null;
-		// Cast key to its type (I am assuming no idiot would use Boolean as a
-		// type for the primary key)
-		switch (tblNameType.get(PKeyName)) {
-		case "java.lang.Integer":
-			keyValue = Integer.parseInt(strKey);
-			break;
-		case "java.lang.String":
-			keyValue = strKey;
-			break;
-		case "java.lang.Double":
-			keyValue = Double.parseDouble(strKey);
-			break;
-		case "java.util.Date":
-			keyValue = new SimpleDateFormat("dd/MM/yyyy").parse(strKey);
-			break;
-		}
+		/////////////////////////////////
 
-		int currentPgNo = 1;
-		Page currentPage;
-		boolean done = false;
-		// and finally, update the table
-		while (true) {
-			try {
-				// Load Page
-				currentPage = PageManager
-						.deserializePage("data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
-				// Go through page
-				for (int i = 0; i < currentPage.getRows().length; i++) {
-					Hashtable<String, Object> curRow = currentPage.getRows()[i];
-					// if a matching row is found
-					if (curRow.get(PKeyName).equals(keyValue) && !((boolean) curRow.get("isDeleted"))) {
-						// Check if the primary key is being changed
-						if (htblColNameValue.get(PKeyName) != null) {
-							// If yes, check that the new value is not already
-							// used somewhere
-							Object newValue = htblColNameValue.get(PKeyName);
-							if (UpdateUtilities.checkNotUsed(strTableName, newValue, PKeyName)) {
-								// Update the tuple
-								for (String key : tblNameType.keySet()) {
-									if (htblColNameValue.containsKey(key))
-										curRow.put(key, htblColNameValue.get(key));
-								}
-								// Store it
-								Hashtable<String, Object> newTuple = new Hashtable<>();
-								for (String key : curRow.keySet()) {
-									newTuple.put(key, curRow.get(key));
-								}
-								// Delete it
-								curRow.put("isDeleted", true);
-								PageManager.serializePage(currentPage,
-										"data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
-								// re-insert it to keep table sorted
-								insertIntoTable(strTableName, newTuple);
-								done = true;
-								break;
-							} else {
-								throw new DBAppException("Primary key value used somewhere.");
-							}
-						}
-						// if not, just update the table
-						else {
-							for (String key : tblNameType.keySet()) {
-								if (!key.equals(PKeyName) && htblColNameValue.containsKey(key))
-									curRow.put(key, htblColNameValue.get(key));
-							}
-							PageManager.serializePage(currentPage,
-									"data/" + strTableName + "/" + "page_" + currentPgNo + ".ser");
-							done = true;
-							break;
+		// Get the Primary Key as a type
+		Object keyValue = UpdateUtilities.getTypedPKey(tblNameType.get(PKeyName), strKey);
+
+		int tblPageNum = 1;
+		int tupleRowNum = 0;
+		Page currentTblPage;
+		// Finding Tuple based on whether the primary key is indexed or not
+		if (indexedColumns.contains(PKeyName)) {
+			System.out.println("PK BRIN used for finding tuple.");
+			// If yes, use the index to find the tuple
+			int curBRINPage = 1;
+			MainLoop: while (true) {
+				try {
+					Page curPage = IndexUtilities
+							.retrievePage("data/" + strTableName + "/" + PKeyName + "/indices/BRIN", curBRINPage);
+					Comparable target = (Comparable) keyValue;
+					for (int i = 0; i < curPage.getRows().length; i++) {
+
+						if ((boolean) curPage.getRows()[i].get("isDeleted"))
+							continue;
+
+						Comparable currentRowMax = (Comparable) curPage.getRows()[i].get(PKeyName + "Max");
+						Comparable currentRowMin = (Comparable) curPage.getRows()[i].get(PKeyName + "Min");
+
+						// Throw an exception if the value isn't within any
+						// of the ranges of the BRIN
+						if (curPage.getRows()[i] == null || target.compareTo(currentRowMin) < 0)
+							throw new NullPointerException();
+
+						// if the target belongs in the range
+						if (target.compareTo(currentRowMax) <= 0 && target.compareTo(currentRowMin) >= 0) {
+							tblPageNum = (int) curPage.getRows()[i].get("pageNumber");
+							break MainLoop;
 						}
 					}
+					curBRINPage++;
+				} catch (DBAppException e) {
+					System.out.println(e.getMessage());
+				} catch (NullPointerException e) {
+					throw new DBAppException("No Record with such key value!");
 				}
-				if (done)
+			}
+			// After finding page, find the tuple
+			currentTblPage = PageManager.deserializePage("data/" + strTableName + "/page_" + tblPageNum + ".ser");
+			boolean found = false;
+			// Go through page
+			for (int i = 0; i < currentTblPage.getRows().length; i++) {
+				Hashtable<String, Object> curRow = currentTblPage.getRows()[i];
+				// if a matching row is found
+				if (curRow.get(PKeyName).equals(keyValue) && !((boolean) curRow.get("isDeleted"))) {
+					tupleRowNum = i;
+					System.out.println("Tuple found in page: " + tblPageNum + " in row: " + tupleRowNum);
+					found = true;
 					break;
-				currentPgNo++;
-			} catch (Exception e) {
-				// e.printStackTrace();
-				// No more pages and the row to be update still not found
-				throw new DBAppException("You are trying to update a non-existing row!");
+				}
+			}
+			if (!found) {
+				throw new DBAppException("No Record with such key value!");
+			}
+
+		} else {
+			System.out.println("PK BRIN not used for finding tuples");
+			// Otherwise, go through the table linearly
+			MainLoop: while (true) {
+				try {
+					// Load Page
+					currentTblPage = PageManager
+							.deserializePage("data/" + strTableName + "/page_" + tblPageNum + ".ser");
+					// Go through page
+					for (int i = 0; i < currentTblPage.getRows().length; i++) {
+						Hashtable<String, Object> curRow = currentTblPage.getRows()[i];
+						// if a matching row is found
+						if (curRow.get(PKeyName).equals(keyValue) && !((boolean) curRow.get("isDeleted"))) {
+							tupleRowNum = i;
+							System.out.println("Tuple found in page: " + tblPageNum + " in row: " + tupleRowNum);
+							break MainLoop;
+						}
+					}
+					tblPageNum++;
+				} catch (Exception e) {
+					throw new DBAppException("You are trying to update a non-existing row!");
+				}
 			}
 		}
+
+		// Now we have the page number and the row number, so update
+		if (htblColNameValue.containsKey(PKeyName)) {
+			System.out.println("PK is going to be changed");
+			// If the primary key is being changed
+			// Check if it doesn't violate
+			if (UpdateUtilities.checkNotUsed(strTableName, htblColNameValue.get(PKeyName), PKeyName)) {
+				System.out.println("No violation");
+				// Get the old tuple
+				Hashtable<String, Object> oldTuple = new Hashtable<>();
+				// Get its ID
+				oldTuple.put(PKeyName, currentTblPage.getRows()[tupleRowNum].get(PKeyName));
+				// Create the new tuple
+				Hashtable<String, Object> newTuple = currentTblPage.getRows()[tupleRowNum];
+				// Do the updates
+				for (String key : htblColNameValue.keySet())
+					newTuple.put(key, htblColNameValue.get(key));
+				// Delete the old tuple
+				deleteFromTable(strTableName, oldTuple);
+				// Insert the new tuple
+				insertIntoTable(strTableName, newTuple);
+			} else {
+				throw new DBAppException("Key Already Used");
+			}
+		} else {
+			Hashtable<String, Object> oldValues = new Hashtable<>();
+			Hashtable<String, Object> newValues = new Hashtable<>();
+
+			// Non-prime attributes are updated
+			for (String key : htblColNameValue.keySet()) {
+
+				// Store the old and new values if it's indexed
+				if (indexedColumns.contains(key)) {
+					oldValues.put(key, currentTblPage.getRows()[tupleRowNum].get(key));
+					newValues.put(key, htblColNameValue.get(key));
+				}
+
+				// Update the value in table
+				currentTblPage.getRows()[tupleRowNum].put(key, htblColNameValue.get(key));
+			}
+			
+			// Store the table
+			PageManager.serializePage(currentTblPage, "data/" + strTableName + "/" + "page_" + tblPageNum + ".ser");
+			System.out.println("Table page updated and stored");
+			
+			// Then update their dense indices, remove PKey as it's not changed
+			if (indexedColumns.contains(PKeyName))
+				indexedColumns.remove(PKeyName);
+			System.out.println("Going to arrange dense now");
+			UpdateUtilities.updateDenseIndex(strTableName, newValues, oldValues, tblPageNum, tupleRowNum);
+		}
+
 		System.out.println("Update made successfully!");
 	}
 

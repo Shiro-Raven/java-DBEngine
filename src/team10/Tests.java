@@ -111,9 +111,12 @@ public class Tests {
 
 	public static void main(String[] args) throws Exception {
 
-		// createMockTable();
-		// insertValuesIntoTable();
-		new DBApp().createBRINIndex(tblName, "id");
+		createMockTable();
+		new DBApp().createBRINIndex(tblName, "name2");
+		insertValuesIntoTable();
+		testDenseIndex(tblName, "name2");
+		testBRINIndex(tblName, "name2");
+		new DBApp().createBRINIndex(tblName, "name");
 		testDenseIndex(tblName, "name");
 		testBRINIndex(tblName, "name");
 
@@ -126,6 +129,7 @@ public class Tests {
 		for (int i = 1; i <= 200; i++) {
 			row.put("id", i);
 			row.put("name", ranStr.nextString());
+			row.put("name2", ranStr.nextString());
 			app.insertIntoTable(tblName, row);
 
 		}
@@ -137,6 +141,7 @@ public class Tests {
 		Hashtable<String, String> columns = new Hashtable<String, String>();
 		columns.put("id", "java.lang.Integer");
 		columns.put("name", "java.lang.String");
+		columns.put("name2", "java.lang.String");
 		app.createTable(tblName, "id", columns);
 	}
 

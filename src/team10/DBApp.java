@@ -260,13 +260,17 @@ public class DBApp {
 			if (UpdateUtilities.checkNotUsed(strTableName, htblColNameValue.get(PKeyName), PKeyName)) {
 				System.out.println("No violation");
 				// Get the old tuple
+				Hashtable<String, Object> oldTuple = new Hashtable<>();
+				// Get its ID
+				oldTuple.put(PKeyName, currentTblPage.getRows()[tupleRowNum].get(PKeyName));
+				// Create the new tuple
 				Hashtable<String, Object> newTuple = currentTblPage.getRows()[tupleRowNum];
-				// Delete the old tuple
-				deleteFromTable(strTableName, currentTblPage.getRows()[tupleRowNum]);
 				// Do the updates
 				for (String key : htblColNameValue.keySet())
 					newTuple.put(key, htblColNameValue.get(key));
-				// Insert into the table
+				// Delete the old tuple
+				deleteFromTable(strTableName, oldTuple);
+				// Insert the new tuple
 				insertIntoTable(strTableName, newTuple);
 			} else {
 				throw new DBAppException("Key Already Used");

@@ -111,19 +111,21 @@ public class Tests {
 
 	public static void main(String[] args) throws Exception {
 
-		createMockTable();
-		new DBApp().createBRINIndex(tblName, "name2");
-		insertValuesIntoTable();
-		testDenseIndex(tblName, "name2");
-		testBRINIndex(tblName, "name2");
-		new DBApp().createBRINIndex(tblName, "number");
-		testDenseIndex(tblName, "number");
-		testBRINIndex(tblName, "number");
+//		createMockTable();
+//		new DBApp().createBRINIndex(tblName, "name2");
+//		insertValuesIntoTable();
+//		testDenseIndex(tblName, "name2");
+//		testBRINIndex(tblName, "name2");
+//		new DBApp().createBRINIndex(tblName, "number");
+//		testDenseIndex(tblName, "number");
+//		testBRINIndex(tblName, "number");
+//		new DBApp().createBRINIndex(tblName, "id");
 
 		// Delete this after testing
-//		Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
-//		htblColNameValue.put("number", 5);
-//		new DBApp().updateTable(tblName, "40" , htblColNameValue);
+		Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
+		htblColNameValue.put("number", 100);
+		new DBApp().updateTable(tblName, "2" , htblColNameValue);
+		
 
 	}
 

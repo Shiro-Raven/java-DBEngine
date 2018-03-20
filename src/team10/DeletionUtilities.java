@@ -171,6 +171,8 @@ public class DeletionUtilities {
 
 				if (!active)
 					break;
+				
+				pageNumberBRIN++;
 			}
 
 			// pass modified page to updateBRIN method

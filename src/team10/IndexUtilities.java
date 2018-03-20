@@ -129,8 +129,6 @@ public class IndexUtilities {
 
 	protected static Path moveTuplesToDir(String strTableName) throws IOException {
 
-		// TODO: Check if table exists
-
 		File tableDir = new File("data/" + strTableName + "/");
 		Path tmpDirPath = Files.createTempDirectory("DBAppTeam10-");
 
@@ -890,6 +888,7 @@ public class IndexUtilities {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	protected static void altInsertion(String strTableName, Hashtable<String, Object> htblColNameValue,
 			String newlyIndexedColumn) throws Exception {
 		String line = null;
@@ -965,13 +964,6 @@ public class IndexUtilities {
 					newlyIndexedColumn, tempPositionToInsertAt[0], tempPositionToInsertAt[1],
 					htblColNameValue.get(newlyIndexedColumn));
 		}
-
-		/** TODO update the BRIN index after insertion **/
-
-		System.out.println("Tuple Inserted!");
-		System.out.println(
-				"Changed Dense Index Page Numbers at the end: " + changedPagesAfterDenseIndexUpdate.toString());
-
 	}
 
 	protected static String getPrimaryColumn(String tableName) throws IOException {

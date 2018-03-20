@@ -124,21 +124,15 @@ public class DBApp {
 				try {
 					IndexUtilities.updateBRINIndexOnPK(strTableName, primaryKey, positionToInsertAt[0]);
 				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 
 		}
 
-		/** TODO update the BRIN index after insertion **/
-
 		System.out.println("Tuple Inserted!");
-		System.out.println(
-				"Changed Dense Index Page Numbers at the end: " + changedPagesAfterDenseIndexUpdate.toString());
 
 	}
 

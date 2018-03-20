@@ -4,7 +4,7 @@ import java.util.Hashtable;
 
 public class Tests {
 
-	static String tblName = "mockTable";
+	static String tblName = "muccTable";
 
 	static void testDenseIndex(String tblName, String colName) {
 
@@ -116,9 +116,14 @@ public class Tests {
 		insertValuesIntoTable();
 		testDenseIndex(tblName, "name2");
 		testBRINIndex(tblName, "name2");
-		new DBApp().createBRINIndex(tblName, "name");
-		testDenseIndex(tblName, "name");
-		testBRINIndex(tblName, "name");
+		new DBApp().createBRINIndex(tblName, "number");
+		testDenseIndex(tblName, "number");
+		testBRINIndex(tblName, "number");
+
+		// Delete this after testing
+//		Hashtable<String, Object> htblColNameValue = new Hashtable<String, Object>();
+//		htblColNameValue.put("number", 5);
+//		new DBApp().updateTable(tblName, "40" , htblColNameValue);
 
 	}
 
@@ -126,12 +131,14 @@ public class Tests {
 		DBApp app = new DBApp();
 		RandomString ranStr = new RandomString(8);
 		Hashtable<String, Object> row = new Hashtable<>();
-		for (int i = 1; i <= 200; i++) {
+		for (int i = 1; i <= 50; i++) {
 			row.put("id", i);
-			row.put("name", ranStr.nextString());
+			if(i < 10)
+				row.put("number", 5);
+			else
+				row.put("number", i);
 			row.put("name2", ranStr.nextString());
 			app.insertIntoTable(tblName, row);
-
 		}
 
 	}
@@ -140,7 +147,7 @@ public class Tests {
 		DBApp app = new DBApp();
 		Hashtable<String, String> columns = new Hashtable<String, String>();
 		columns.put("id", "java.lang.Integer");
-		columns.put("name", "java.lang.String");
+		columns.put("number", "java.lang.Integer");
 		columns.put("name2", "java.lang.String");
 		app.createTable(tblName, "id", columns);
 	}

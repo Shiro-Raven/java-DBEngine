@@ -11,3 +11,5 @@ A java lang based basic database engine with the following supported features
 - [Ahmed Darwish](https://github.com/Shiro-Raven)
 - [Omar Elkilany](https://github.com/OmarElkilany)
 - [Maqarios Mohareb](https://github.com/Maqarios)
+- [Omar ElSherif](https://github.com/OmarOES)
+- [Hamahmi](https://github.com/Hamahmi)
